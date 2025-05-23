@@ -33,6 +33,10 @@ migrate_working_dir/
 .pub/
 /build/
 
+#Api keys
+.env
+*.env
+
 # Symbolication related
 app.*.symbols
 
