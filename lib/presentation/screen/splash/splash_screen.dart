@@ -32,7 +32,11 @@ class SplashScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const Text(
                 'CryptoX',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Pacifico',
+                ),
               ),
             ],
           ),
