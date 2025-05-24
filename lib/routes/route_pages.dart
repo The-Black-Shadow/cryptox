@@ -1,3 +1,4 @@
+import 'package:cryptox/presentation/screen/auth/signup_screen.dart';
 import 'package:cryptox/presentation/screen/home/home_screen.dart';
 import 'package:cryptox/presentation/screen/profile/profile_screen.dart';
 import 'package:cryptox/presentation/screen/splash/splash_screen.dart';
@@ -18,6 +19,12 @@ class RoutePages {
         name: Routes.SPLASH_ROUTE,
         pageBuilder: (context, state) =>
             const MaterialPage(child: SplashScreen()),
+      ),
+      // Auth routes (independent)
+      GoRoute(
+        path: Routes.SIGNIN_ROUTE,
+        name: Routes.SIGNIN_ROUTE,
+        pageBuilder: (context, state) => MaterialPage(child: SignupScreen()),
       ),
 
       // Shell route with BottomNav wrapper
