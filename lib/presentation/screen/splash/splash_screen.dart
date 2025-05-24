@@ -11,12 +11,19 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Start splash logic on build
+    context.read<SplashCubit>().startSplash();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: BlocListener<SplashCubit, SplashState>(
         listener: (context, state) {
           if (state is SplashEnd) {
-            context.goNamed(Routes.WELCOME_ROUTE);
+            if (state.isAuthenticated) {
+              context.goNamed(Routes.HOME_ROUTE);
+            } else {
+              context.goNamed(Routes.WELCOME_ROUTE);
+            }
           }
         },
         child: Center(

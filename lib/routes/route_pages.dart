@@ -15,7 +15,6 @@ part 'routes.dart';
 
 class RoutePages {
   static final ROUTER = GoRouter(
-    initialLocation: Routes.SPLASH_ROUTE,
     routes: [
       // Splash screen route (independent)
       GoRoute(
