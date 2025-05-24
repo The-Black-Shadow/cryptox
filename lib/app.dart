@@ -1,3 +1,5 @@
+import 'package:cryptox/data/repositories/auth_repository.dart';
+import 'package:cryptox/logic/bloc/signin/signin_bloc.dart';
 import 'package:cryptox/logic/bloc/signup/signup_bloc.dart';
 import 'package:cryptox/logic/cubit/splash/splash_cubit.dart';
 import 'package:cryptox/routes/route_pages.dart';
@@ -11,21 +13,27 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => SplashCubit()..startSplash()),
-        BlocProvider(create: (context) => SignupBloc()),
-      ],
-      child: ScreenUtilInit(
-        designSize: const Size(360, 690),
-        builder: (_, child) {
-          return MaterialApp.router(
-            theme: const MaterialTheme(TextTheme()).light(),
-            darkTheme: const MaterialTheme(TextTheme()).dark(),
-            debugShowCheckedModeBanner: false,
-            routerConfig: RoutePages.ROUTER,
-          );
-        },
+    return MultiRepositoryProvider(
+      providers: [RepositoryProvider(create: (context) => AuthRepository())],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => SplashCubit()..startSplash()),
+          BlocProvider(create: (context) => SignupBloc()),
+          BlocProvider(
+            create: (context) => SigninBloc((context.read<AuthRepository>())),
+          ),
+        ],
+        child: ScreenUtilInit(
+          designSize: const Size(360, 690),
+          builder: (_, child) {
+            return MaterialApp.router(
+              theme: const MaterialTheme(TextTheme()).light(),
+              darkTheme: const MaterialTheme(TextTheme()).dark(),
+              debugShowCheckedModeBanner: false,
+              routerConfig: RoutePages.ROUTER,
+            );
+          },
+        ),
       ),
     );
   }
