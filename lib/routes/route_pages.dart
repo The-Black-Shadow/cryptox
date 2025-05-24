@@ -1,8 +1,12 @@
+// ignore_for_file: non_constant_identifier_names
+
+import 'package:cryptox/presentation/screen/auth/signin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signup_screen.dart';
 import 'package:cryptox/presentation/screen/home/home_screen.dart';
 import 'package:cryptox/presentation/screen/profile/profile_screen.dart';
 import 'package:cryptox/presentation/screen/splash/splash_screen.dart';
 import 'package:cryptox/presentation/screen/wallet/wallet_screen.dart';
+import 'package:cryptox/presentation/screen/welcome/welcome_screen.dart';
 import 'package:cryptox/presentation/screen/wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -20,11 +24,24 @@ class RoutePages {
         pageBuilder: (context, state) =>
             const MaterialPage(child: SplashScreen()),
       ),
+      // Welcome screen route (independent)
+      GoRoute(
+        path: Routes.WELCOME_ROUTE,
+        name: Routes.WELCOME_ROUTE,
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: WelcomeScreen()),
+      ),
+
       // Auth routes (independent)
+      GoRoute(
+        path: Routes.SIGNUP_ROUTE,
+        name: Routes.SIGNUP_ROUTE,
+        pageBuilder: (context, state) => MaterialPage(child: SignupScreen()),
+      ),
       GoRoute(
         path: Routes.SIGNIN_ROUTE,
         name: Routes.SIGNIN_ROUTE,
-        pageBuilder: (context, state) => MaterialPage(child: SignupScreen()),
+        pageBuilder: (context, state) => MaterialPage(child: SigninScreen()),
       ),
 
       // Shell route with BottomNav wrapper

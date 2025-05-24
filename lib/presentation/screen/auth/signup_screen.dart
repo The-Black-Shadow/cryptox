@@ -26,14 +26,14 @@ class SignupScreen extends StatelessWidget {
             SizedBox(height: 20.0),
 
             BlocBuilder<SignupBloc, SignupState>(
-              builder: (context, State) {
-                if (State is SignupInitial) {
+              builder: (context, state) {
+                if (state is SignupInitial) {
                   return Form(
                     key: formkey,
                     child: Column(
                       children: [
                         TextFormField(
-                          controller: State.usernameController,
+                          controller: state.usernameController,
                           decoration: InputDecoration(
                             labelText: 'User name',
                             hintText: 'Enter your User name',
@@ -48,7 +48,7 @@ class SignupScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 16.0),
                         TextFormField(
-                          controller: State.emailController,
+                          controller: state.emailController,
                           decoration: InputDecoration(
                             labelText: 'Email',
                             hintText: 'Enter your Email',
@@ -63,7 +63,7 @@ class SignupScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 16.0),
                         TextFormField(
-                          controller: State.passwordController,
+                          controller: state.passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
                             hintText: 'Enter your Password',
