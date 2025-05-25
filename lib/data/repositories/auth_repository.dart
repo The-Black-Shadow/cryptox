@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptox/data/models/user_model.dart';
+import 'package:cryptox/data/preference/local_preference.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
@@ -45,9 +46,16 @@ class AuthRepository {
         userName: user.displayName ?? 'No Name',
         userEmail: user.email ?? 'No Email',
         photoUrl: user.photoURL ?? '',
-        phoneNumber: user.phoneNumber ?? '',
+        phoneNumber: user.phoneNumber ?? '+88017xxxxxxxx',
       );
       await _firestore.collection('users').doc(user.uid).set(data.toJson());
+      //also save user data in local preferences
+      LocalPreferences.setString('userName', data.userName);
+      LocalPreferences.setString('userEmail', data.userEmail);
+      LocalPreferences.setString('photoUrl', data.photoUrl);
+      LocalPreferences.setString('phoneNumber', data.phoneNumber);
+      LocalPreferences.setString('uid', user.uid);
+
       debugPrint("User created in database: ${data.userEmail}");
     } catch (e) {
       debugPrint("Failed to create user in Firestore: $e");

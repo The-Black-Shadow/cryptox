@@ -1,4 +1,6 @@
 {
   "user_name": "",
-  "user_email": ""
+    "user_email": "",
+    "photo_url": "",
+    "phone_number": ""
 }

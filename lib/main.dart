@@ -1,4 +1,5 @@
 import 'package:cryptox/app.dart';
+import 'package:cryptox/data/preference/local_preference.dart';
 import 'package:cryptox/firebase_options.dart';
 import 'package:cryptox/logic/bloc/bloc_observer.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,5 +12,6 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await dotenv.load(fileName: ".env");
   Bloc.observer = MyBlocObserver();
+  await LocalPreferences().init();
   runApp(const MyApp());
 }

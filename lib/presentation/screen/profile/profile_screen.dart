@@ -1,3 +1,4 @@
+import 'package:cryptox/data/preference/local_preference.dart';
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -5,6 +6,14 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(
+        child: Text(
+          'Hello,${LocalPreferences.getString('userName')}',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+      ),
+    );
   }
 }
