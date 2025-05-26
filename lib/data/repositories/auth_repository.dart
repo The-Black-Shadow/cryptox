@@ -42,21 +42,37 @@ class AuthRepository {
 
   Future<void> createUserInDatabase(User user) async {
     try {
+      final DocumentSnapshot userDoc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      await _firestore.collection('users').doc(user.uid).get();
       final data = UserModel(
         userName: user.displayName ?? 'No Name',
         userEmail: user.email ?? 'No Email',
         photoUrl: user.photoURL ?? '',
         phoneNumber: user.phoneNumber ?? '+88017xxxxxxxx',
       );
-      await _firestore.collection('users').doc(user.uid).set(data.toJson());
+
+      if (!userDoc.exists) {
+        // User document does not exist, create it
+        final data = UserModel(
+          userName: user.displayName ?? 'No Name',
+          userEmail: user.email ?? 'No Email',
+          photoUrl: user.photoURL ?? '',
+          phoneNumber: user.phoneNumber ?? '+88017xxxxxxxx',
+        );
+        await _firestore.collection('users').doc(user.uid).set(data.toJson());
+        debugPrint("User created in database: ${data.userEmail}");
+      } else {
+        debugPrint("User already exists in database: ${user.email}");
+      }
       //also save user data in local preferences
       LocalPreferences.setString('userName', data.userName);
       LocalPreferences.setString('userEmail', data.userEmail);
       LocalPreferences.setString('photoUrl', data.photoUrl);
       LocalPreferences.setString('phoneNumber', data.phoneNumber);
       LocalPreferences.setString('uid', user.uid);
-
-      debugPrint("User created in database: ${data.userEmail}");
     } catch (e) {
       debugPrint("Failed to create user in Firestore: $e");
     }
