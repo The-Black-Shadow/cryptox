@@ -13,3 +13,8 @@ final class FetchProfileSuccess extends ProfileState {
   @override
   List<Object> get props => [];
 }
+
+final class LogoutSuccess extends ProfileState {
+  @override
+  List<Object> get props => [];
+}

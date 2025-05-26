@@ -61,4 +61,21 @@ class AuthRepository {
       debugPrint("Failed to create user in Firestore: $e");
     }
   }
+
+  Future<void> signOut() async {
+    try {
+      // Sign out from Firebase
+      await _auth.signOut();
+
+      // Sign out from Google
+      await GoogleSignIn().signOut();
+
+      // Clear locally stored user data
+      await LocalPreferences.clear();
+
+      debugPrint("User successfully signed out.");
+    } catch (e) {
+      debugPrint("Error during sign out: $e");
+    }
+  }
 }

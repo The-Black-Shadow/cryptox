@@ -1,4 +1,5 @@
 import 'package:cryptox/data/repositories/auth_repository.dart';
+import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
 import 'package:cryptox/logic/bloc/signin/signin_bloc.dart';
 import 'package:cryptox/logic/bloc/signup/signup_bloc.dart';
 import 'package:cryptox/logic/cubit/splash/splash_cubit.dart';
@@ -21,6 +22,9 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => SignupBloc()),
           BlocProvider(
             create: (context) => SigninBloc((context.read<AuthRepository>())),
+          ),
+          BlocProvider(
+            create: (context) => ProfileBloc((context.read<AuthRepository>())),
           ),
         ],
         child: ScreenUtilInit(

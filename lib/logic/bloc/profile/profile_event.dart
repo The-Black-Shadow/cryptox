@@ -13,3 +13,10 @@ class FetchProfileEvent extends ProfileEvent {
   @override
   List<Object> get props => [];
 }
+
+class LogoutEvent extends ProfileEvent {
+  const LogoutEvent();
+
+  @override
+  List<Object> get props => [];
+}
