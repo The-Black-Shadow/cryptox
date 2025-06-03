@@ -1,4 +1,6 @@
 import 'package:cryptox/data/repositories/auth_repository.dart';
+import 'package:cryptox/data/repositories/coin_repository.dart';
+import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
 import 'package:cryptox/logic/bloc/signin/signin_bloc.dart';
 import 'package:cryptox/logic/bloc/signup/signup_bloc.dart';
@@ -15,7 +17,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
-      providers: [RepositoryProvider(create: (context) => AuthRepository())],
+      providers: [
+        RepositoryProvider(create: (context) => AuthRepository()),
+        RepositoryProvider(create: (context) => CoinRepository()),
+      ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider(create: (context) => SplashCubit()..startSplash()),
@@ -25,6 +30,10 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider(
             create: (context) => ProfileBloc((context.read<AuthRepository>())),
+          ),
+          BlocProvider(
+            create: (context) =>
+                CoinBloc(coinRepository: CoinRepository())..add(LoadCoins()),
           ),
         ],
         child: ScreenUtilInit(
