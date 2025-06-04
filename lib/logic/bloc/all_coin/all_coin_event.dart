@@ -8,15 +8,16 @@ sealed class AllCoinEvent extends Equatable {
 }
 
 class LoadAllCoins extends AllCoinEvent {
-  const LoadAllCoins();
+  const LoadAllCoins(); // Keep this const
 
   @override
   List<Object> get props => [];
 }
 
-class SearchCoins extends AllCoinEvent {
+class SearchCoin extends AllCoinEvent {
   final String query;
-  const SearchCoins(this.query);
+
+  const SearchCoin(this.query);
 
   @override
   List<Object> get props => [query];

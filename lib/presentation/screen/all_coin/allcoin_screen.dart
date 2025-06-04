@@ -1,9 +1,8 @@
-import 'package:cryptox/data/models/coin_model.dart';
 import 'package:cryptox/logic/bloc/all_coin/all_coin_bloc.dart';
-import 'package:cryptox/routes/route_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+// Assuming Coin model might be needed for type hints if not implicitly handled by BLoC states
+// import 'package:cryptox/data/models/coin_model.dart';
 
 class AllcoinScreen extends StatefulWidget {
   const AllcoinScreen({super.key});
@@ -14,77 +13,89 @@ class AllcoinScreen extends StatefulWidget {
 
 class _AllcoinScreenState extends State<AllcoinScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<Coin> _filteredCoins = [];
 
   @override
   void initState() {
     super.initState();
-    context.read<AllCoinBloc>().add(LoadAllCoins());
+    context.read<AllCoinBloc>().add(const LoadAllCoins());
+    _searchController.addListener(_onSearchQueryChanged);
+  }
 
-    _searchController.addListener(() {
-      setState(() {});
-    });
+  void _onSearchQueryChanged() {
+    context.read<AllCoinBloc>().add(SearchCoin(_searchController.text));
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchQueryChanged);
     _searchController.dispose();
     super.dispose();
-  }
-
-  List<Coin> _filterCoins(List<Coin> allCoins) {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) return allCoins;
-    return allCoins.where((coin) {
-      return coin.name.toLowerCase().contains(query) ||
-          coin.symbol.toLowerCase().contains(query);
-    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Coins'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go(Routes.HOME_ROUTE),
-          ),
-        ],
-      ),
-      body: BlocBuilder<AllCoinBloc, AllCoinState>(
-        builder: (context, state) {
-          if (state is AllCoinLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is AllCoinLoaded) {
-            _filteredCoins = _filterCoins(state.coins);
-
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'Search coins...',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(8)),
-                      ),
-                    ),
-                  ),
+      appBar: AppBar(title: const Text('All Coins'), centerTitle: true),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search coins...',
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
                 ),
-                Expanded(
-                  child: RefreshIndicator(
+              ),
+            ),
+          ),
+          Expanded(
+            child: BlocBuilder<AllCoinBloc, AllCoinState>(
+              builder: (context, state) {
+                // Handle Loading State
+                if (state is AllCoinLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                // Handle Loaded State
+                else if (state is AllCoinLoaded) {
+                  // Case 1: Master list from API is empty
+                  if (state.allCoins.isEmpty) {
+                    return RefreshIndicator(
+                      onRefresh: () async =>
+                          context.read<AllCoinBloc>().add(const LoadAllCoins()),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: <Widget>[
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height / 3,
+                          ),
+                          const Center(
+                            child: Text('No coins available. Pull to refresh.'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  // Case 2: Search query yields no results from a non-empty master list
+                  if (state.filteredCoins.isEmpty &&
+                      _searchController.text.isNotEmpty) {
+                    // This message doesn't need pull-to-refresh for loading *all* coins,
+                    // as the user can just change/clear the search.
+                    return const Center(
+                      child: Text('No coins found matching your search.'),
+                    );
+                  }
+                  // Case 3: Data is available and filtered (or all data if no filter)
+                  return RefreshIndicator(
                     onRefresh: () async =>
-                        context.read<AllCoinBloc>().add(LoadAllCoins()),
+                        context.read<AllCoinBloc>().add(const LoadAllCoins()),
                     child: ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: _filteredCoins.length,
+                      itemCount: state.filteredCoins.length,
                       itemBuilder: (context, index) {
-                        final coin = _filteredCoins[index];
+                        final coin = state.filteredCoins[index];
                         final priceChange = coin.priceChangePercentage24h;
                         final priceChangeColor = priceChange >= 0
                             ? Colors.green
@@ -111,24 +122,47 @@ class _AllcoinScreenState extends State<AllcoinScreen> {
                         );
                       },
                     ),
+                  );
+                }
+                // Handle Failure State
+                else if (state is AllCoinFailure) {
+                  return RefreshIndicator(
+                    onRefresh: () async =>
+                        context.read<AllCoinBloc>().add(const LoadAllCoins()),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: <Widget>[
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height / 3,
+                        ),
+                        Center(
+                          child: Text(
+                            'Error: ${state.error}\nPull to refresh.',
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                // Handle Initial State (or any other unhandled states)
+                // This also covers AllCoinInitial.
+                return RefreshIndicator(
+                  onRefresh: () async =>
+                      context.read<AllCoinBloc>().add(const LoadAllCoins()),
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: <Widget>[
+                      SizedBox(height: MediaQuery.of(context).size.height / 3),
+                      const Center(
+                        child: Text('Pull to refresh to load coins.'),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async =>
-                context.read<AllCoinBloc>().add(LoadAllCoins()),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: const [
-                SizedBox(height: 300),
-                Center(child: Text('No data available, try again later!')),
-              ],
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
