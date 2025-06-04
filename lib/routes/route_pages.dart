@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:cryptox/presentation/screen/all_coin/allcoin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signup_screen.dart';
 import 'package:cryptox/presentation/screen/home/home_screen.dart';
@@ -41,6 +42,12 @@ class RoutePages {
         path: Routes.SIGNIN_ROUTE,
         name: Routes.SIGNIN_ROUTE,
         pageBuilder: (context, state) => MaterialPage(child: SigninScreen()),
+      ),
+
+      GoRoute(
+        path: Routes.ALL_COIN_ROUTE,
+        name: Routes.ALL_COIN_ROUTE,
+        pageBuilder: (context, state) => MaterialPage(child: AllcoinScreen()),
       ),
 
       // Shell route with BottomNav wrapper

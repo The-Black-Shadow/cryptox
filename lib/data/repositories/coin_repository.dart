@@ -15,7 +15,7 @@ class CoinRepository {
 
     final response = await http.get(
       url,
-      headers: {'x-cg-demo-api-key': ?apiKey},
+      headers: {'x-cg-demo-api-key': apiKey ?? ''},
     );
     debugPrint('Response status code: ${response.statusCode}');
     if (response.statusCode == 200) {

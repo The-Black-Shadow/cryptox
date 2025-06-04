@@ -1,5 +1,7 @@
+import 'package:cryptox/data/repositories/allcoin_repository.dart';
 import 'package:cryptox/data/repositories/auth_repository.dart';
 import 'package:cryptox/data/repositories/coin_repository.dart';
+import 'package:cryptox/logic/bloc/all_coin/all_coin_bloc.dart';
 import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
 import 'package:cryptox/logic/bloc/signin/signin_bloc.dart';
@@ -20,6 +22,7 @@ class MyApp extends StatelessWidget {
       providers: [
         RepositoryProvider(create: (context) => AuthRepository()),
         RepositoryProvider(create: (context) => CoinRepository()),
+        RepositoryProvider(create: (context) => AllCoinRepository()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -34,6 +37,9 @@ class MyApp extends StatelessWidget {
           BlocProvider(
             create: (context) =>
                 CoinBloc(coinRepository: CoinRepository())..add(LoadCoins()),
+          ),
+          BlocProvider(
+            create: (context) => AllCoinBloc(context.read<AllCoinRepository>()),
           ),
         ],
         child: ScreenUtilInit(
