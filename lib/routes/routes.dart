@@ -11,4 +11,6 @@ class Routes {
   static const String WALLET_ROUTE = '/wallet';
   static const String PROFILE_ROUTE = '/profile';
   static const String ALL_COIN_ROUTE = '/all_coin';
+  static const String ALL_NEWS_ROUTE = '/all_news';
+  static const String NEWS_DETAIL_ROUTE = '/news_detail';
 }

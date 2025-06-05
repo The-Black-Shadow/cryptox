@@ -1,9 +1,12 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:cryptox/data/models/news_model.dart';
 import 'package:cryptox/presentation/screen/all_coin/allcoin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signup_screen.dart';
 import 'package:cryptox/presentation/screen/home/home_screen.dart';
+import 'package:cryptox/presentation/screen/news_screen.dart/all_news_screen.dart';
+import 'package:cryptox/presentation/screen/news_screen.dart/news_detail_screen.dart';
 import 'package:cryptox/presentation/screen/profile/profile_screen.dart';
 import 'package:cryptox/presentation/screen/splash/splash_screen.dart';
 import 'package:cryptox/presentation/screen/wallet/wallet_screen.dart';
@@ -48,6 +51,43 @@ class RoutePages {
         path: Routes.ALL_COIN_ROUTE,
         name: Routes.ALL_COIN_ROUTE,
         pageBuilder: (context, state) => MaterialPage(child: AllcoinScreen()),
+      ),
+
+      GoRoute(
+        path: Routes.ALL_NEWS_ROUTE,
+        name: Routes.ALL_NEWS_ROUTE,
+        pageBuilder: (context, state) => MaterialPage(child: AllNewsView()),
+      ),
+
+      GoRoute(
+        path: Routes.NEWS_DETAIL_ROUTE,
+        name: Routes.NEWS_DETAIL_ROUTE, // Optional: name the route
+        pageBuilder: (context, state) {
+          // 1. Retrieve the article object from state.extra
+          final article = state.extra as Datum; // Cast to your Datum model
+
+          // 2. Use CustomTransitionPage for smoother Hero animations (recommended)
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: NewsDetailScreen(
+              article: article,
+            ), // <-- Pass the retrieved article here
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  // Example: Fade Transition (works well with Hero)
+                  return FadeTransition(opacity: animation, child: child);
+                },
+            transitionDuration: const Duration(
+              milliseconds: 300,
+            ), // Standard duration
+          );
+
+          // If you strictly want to use MaterialPage (though CustomTransitionPage is better for Hero):
+          // return MaterialPage(
+          //   key: state.pageKey,
+          //   child: NewsDetailScreen(article: article), // <-- Pass the retrieved article here
+          // );
+        },
       ),
 
       // Shell route with BottomNav wrapper
