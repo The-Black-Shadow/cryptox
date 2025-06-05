@@ -61,11 +61,6 @@ class CryptoConvertBloc extends Bloc<CryptoConvertEvent, CryptoConvertState> {
         orElse: () => throw Exception("To coin data not found"),
       );
 
-      if (fromCoinData == null ||
-          toCoinData == null) {
-        throw Exception("Could not fetch price for one or both coins.");
-      }
-
       final double fromCoinUsdPrice = fromCoinData.currentPrice;
       final double toCoinUsdPrice = toCoinData.currentPrice;
 
