@@ -5,6 +5,7 @@ import 'package:cryptox/data/repositories/news_repository.dart';
 import 'package:cryptox/data/repositories/wallet_repository.dart';
 import 'package:cryptox/logic/bloc/all_coin/all_coin_bloc.dart';
 import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
+import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
 import 'package:cryptox/logic/bloc/news/news_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
 import 'package:cryptox/logic/bloc/signin/signin_bloc.dart';
@@ -56,6 +57,7 @@ class MyApp extends StatelessWidget {
                 WalletBalanceBloc(walletRepository: WalletRepository())
                   ..add(LoadWalletBalance()),
           ),
+          BlocProvider(create: (context) => CryptoConvertBloc(coinRepository: CoinRepository(), walletRepository: WalletRepository())),
         ],
         child: ScreenUtilInit(
           designSize: const Size(360, 690),

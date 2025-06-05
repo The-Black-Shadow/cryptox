@@ -77,4 +77,68 @@ class WalletRepository {
           throw Exception('Failed to listen to balance updates: $error');
         });
   }
+
+  Future<void> performConversionTransaction({
+    required String userId,
+    required String fromCoinFirestoreKey,
+    required double amountToDecrement,
+    required String toCoinFirestoreKey,
+    required double amountToIncrement,
+  }) async {
+    final userBalanceRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('cryptoBalance')
+        .doc('balance');
+
+    return _firestore
+        .runTransaction((transaction) async {
+          final snapshot = await transaction.get(userBalanceRef);
+
+          if (!snapshot.exists || snapshot.data() == null) {
+            throw Exception("User balance document does not exist.");
+          }
+
+          final currentBalances = CryptoBalance.fromJson(snapshot.data()!);
+          double currentFromBalance = 0;
+          double currentToBalance = 0;
+
+          // Helper to get balance by key from CryptoBalance object
+          double getBalance(CryptoBalance balance, String key) {
+            switch (key) {
+              case 'bitcoin':
+                return balance.bitcoin;
+              case 'ethereum':
+                return balance.ethereum;
+              case 'bnb':
+                return balance.bnb;
+              case 'x':
+                return balance.x;
+              default:
+                throw Exception("Invalid fromCoinFirestoreKey: $key");
+            }
+          }
+
+          currentFromBalance = getBalance(
+            currentBalances,
+            fromCoinFirestoreKey,
+          );
+          currentToBalance = getBalance(currentBalances, toCoinFirestoreKey);
+
+          if (currentFromBalance < amountToDecrement) {
+            throw Exception("Insufficient balance for $fromCoinFirestoreKey.");
+          }
+
+          final Map<String, dynamic> updates = {};
+          updates[fromCoinFirestoreKey] =
+              currentFromBalance - amountToDecrement;
+          updates[toCoinFirestoreKey] = currentToBalance + amountToIncrement;
+
+          transaction.update(userBalanceRef, updates);
+        })
+        .catchError((error) {
+          debugPrint("Conversion transaction failed: $error");
+          throw Exception("Conversion failed: ${error.toString()}");
+        });
+  }
 }
