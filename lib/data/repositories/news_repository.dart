@@ -6,15 +6,11 @@ import '../models/news_model.dart'; // Import your News and Datum models
 
 class NewsRepository {
   NewsRepository();
-  // API key usage: The public CoinGecko news endpoint usually doesn't require a key.
-  // If you are using a specific (e.g., Pro) key, ensure the header is correct
-  // (e.g., 'x-cg-pro-api-key' for Pro).
-  // For this demo, I'll keep your API key logic, but it might not be needed for the public endpoint.
+  
   final String? apiKey = dotenv.env['COINGECKO_API_KEY'];
 
   // Fetches a list of news articles (Datum objects)
   Future<List<Datum>> fetchNewsArticles({int page = 1}) async {
-    // Using the URL you confirmed works and gives 20 articles
     final url = Uri.parse('https://api.coingecko.com/api/v3/news?page=$page');
 
     try {

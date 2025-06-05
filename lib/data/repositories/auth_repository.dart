@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cryptox/data/models/crypto_balance_model.dart';
 import 'package:cryptox/data/models/user_model.dart';
 import 'package:cryptox/data/preference/local_preference.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -62,7 +63,23 @@ class AuthRepository {
           photoUrl: user.photoURL ?? '',
           phoneNumber: user.phoneNumber ?? '+88017xxxxxxxx',
         );
+
         await _firestore.collection('users').doc(user.uid).set(data.toJson());
+
+        final cryptoBalance = CryptoBalance(
+          bitcoin: 0.034,
+          ethereum: 1.21,
+          bnb: 0.5,
+          x: 44.5,
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('cryptoBalance')
+            .doc('balance')
+            .set(cryptoBalance.toJson());
+
         debugPrint("User created in database: ${data.userEmail}");
       } else {
         debugPrint("User already exists in database: ${user.email}");

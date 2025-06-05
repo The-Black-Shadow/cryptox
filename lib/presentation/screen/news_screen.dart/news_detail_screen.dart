@@ -25,7 +25,7 @@ class NewsDetailScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         // Allows for flexible scrolling content with app bar
-        slivers: <Widget>[
+        slivers: [
           SliverAppBar(
             expandedHeight: 250.0, // Height of the image when expanded
             floating: false,

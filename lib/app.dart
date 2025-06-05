@@ -2,12 +2,14 @@ import 'package:cryptox/data/repositories/allcoin_repository.dart';
 import 'package:cryptox/data/repositories/auth_repository.dart';
 import 'package:cryptox/data/repositories/coin_repository.dart';
 import 'package:cryptox/data/repositories/news_repository.dart';
+import 'package:cryptox/data/repositories/wallet_repository.dart';
 import 'package:cryptox/logic/bloc/all_coin/all_coin_bloc.dart';
 import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
 import 'package:cryptox/logic/bloc/news/news_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
 import 'package:cryptox/logic/bloc/signin/signin_bloc.dart';
 import 'package:cryptox/logic/bloc/signup/signup_bloc.dart';
+import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
 import 'package:cryptox/logic/cubit/splash/splash_cubit.dart';
 import 'package:cryptox/routes/route_pages.dart';
 import 'package:cryptox/theme/theme.dart';
@@ -26,6 +28,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => CoinRepository()),
         RepositoryProvider(create: (context) => AllCoinRepository()),
         RepositoryProvider(create: (context) => NewsRepository()),
+        RepositoryProvider(create: (context) => WalletRepository()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -47,6 +50,11 @@ class MyApp extends StatelessWidget {
           BlocProvider(
             create: (context) => NewsBloc(newsRepository: NewsRepository())
               ..add(const LoadAllNewsArticles(page: 1)), // API gives 20 items
+          ),
+          BlocProvider(
+            create: (context) =>
+                WalletBalanceBloc(walletRepository: WalletRepository())
+                  ..add(LoadWalletBalance()),
           ),
         ],
         child: ScreenUtilInit(
