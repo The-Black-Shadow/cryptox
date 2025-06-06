@@ -12,6 +12,7 @@ class CryptoBalance extends Equatable {
   final double ethereum; // Changed to double
   final double bnb; // Changed to double
   final double x; // Changed to double (assuming 'x' is also a balance)
+  final double tether;
 
   const CryptoBalance({
     // Added const
@@ -19,6 +20,7 @@ class CryptoBalance extends Equatable {
     required this.ethereum,
     required this.bnb,
     required this.x,
+    required this.tether,
   });
 
   factory CryptoBalance.fromJson(Map<String, dynamic> json) {
@@ -36,6 +38,7 @@ class CryptoBalance extends Equatable {
       ethereum: parseDouble(json["ethereum"]),
       bnb: parseDouble(json["bnb"]),
       x: parseDouble(json["x"]),
+      tether: parseDouble(json["tether"]), // Added tether
     );
   }
 
@@ -44,6 +47,7 @@ class CryptoBalance extends Equatable {
     "ethereum": ethereum, // Will now be a double
     "bnb": bnb, // Will now be a double
     "x": x, // Will now be a double
+    "tether": tether, // Added tether
   };
 
   @override

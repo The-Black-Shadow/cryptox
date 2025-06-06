@@ -71,6 +71,7 @@ class AuthRepository {
           ethereum: 1.21,
           bnb: 0.5,
           x: 44.5,
+          tether: 150.0,
         );
 
         await _firestore

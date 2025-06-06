@@ -35,6 +35,7 @@ class WalletRepository {
           ethereum: 0.0,
           bnb: 0.0,
           x: 0.0,
+          tether: 0.0, // Added tether balance
         );
       }
     } catch (e) {
@@ -69,6 +70,7 @@ class WalletRepository {
               ethereum: 0.0,
               bnb: 0.0,
               x: 0.0,
+              tether: 0.0, // Added tether balance
             );
           }
         })
@@ -114,6 +116,8 @@ class WalletRepository {
                 return balance.bnb;
               case 'x':
                 return balance.x;
+              case 'tether':
+                return balance.tether;
               default:
                 throw Exception("Invalid fromCoinFirestoreKey: $key");
             }

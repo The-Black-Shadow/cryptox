@@ -24,6 +24,13 @@ class CoinDisplayInfo extends Equatable {
 // Verify these IDs against CoinGecko's actual coin list if unsure.
 const List<CoinDisplayInfo> supportedCoinsDisplayInfo = [
   CoinDisplayInfo(
+    firestoreKey: 'tether',
+    coinGeckoId: 'tether',
+    displayName: 'USDT',
+    symbol: 'USDT',
+  ),
+
+  CoinDisplayInfo(
     firestoreKey: 'bitcoin',
     coinGeckoId: 'bitcoin',
     displayName: 'Bitcoin',
