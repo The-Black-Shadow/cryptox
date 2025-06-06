@@ -2,6 +2,7 @@ import 'package:cryptox/data/models/coin_display_info.dart';
 import 'package:cryptox/data/models/crypto_balance_model.dart';
 import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
 import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
+import 'package:cryptox/presentation/widgets/custom_dropdown_field.dart';
 import 'package:cryptox/presentation/widgets/wallet_buton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -85,7 +86,6 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _handleConvertPressed() {
-    // ... (keep your existing _handleConvertPressed logic, it already checks if from and to are same) ...
     if (!mounted) return;
 
     final walletState = context.read<WalletBalanceBloc>().state;
@@ -100,7 +100,6 @@ class _WalletScreenState extends State<WalletScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Cannot convert a coin to itself.")));
       return;
     }
-    // ... (rest of _handleConvertPressed logic from previous version)
     if (walletState is! WalletBalanceLoaded) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Wallet balances not loaded.")));
       return;
@@ -316,7 +315,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: _dropdownField(
+                            child: CustomDropdownField(
                               label: "From Coin",
                               value: _fromCoinDisplayName,
                               // Pass dynamically filtered items for "From Coin"
@@ -340,7 +339,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                           const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Icon(Icons.swap_horiz, size: 30)),
                           Expanded(
-                            child: _dropdownField(
+                            child: CustomDropdownField(
                               label: "To Coin",
                               value: _toCoinDisplayName,
                               // Pass dynamically filtered items for "To Coin"
@@ -454,23 +453,5 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   // Modify _dropdownField to accept the filtered list of items (display names)
-  Widget _dropdownField({
-    required String label,
-    required String? value,
-    required List<String> items, // Changed from List<CoinDisplayInfo> to List<String>
-    required Function(String?) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 6),
-        _buildDropdown( // _buildDropdown already takes List<String> items
-          value: value,
-          items: items,
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
+ 
 }
