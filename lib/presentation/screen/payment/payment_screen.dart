@@ -11,23 +11,33 @@ class PaymentScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stripe Payment (BLoC)'),
+        title: const Text('Deposit USDT'),
         backgroundColor: Colors.deepPurple,
       ),
-      // BlocConsumer is perfect for listening to state changes for actions (like dialogs)
-      // and rebuilding the UI when needed (like showing a loading spinner).
+
       body: BlocConsumer<PaymentBloc, PaymentState>(
         listener: (context, state) {
           if (state is PaymentSuccess) {
             showDialog(
               context: context,
-              builder: (_) => const AlertDialog(
+              builder: (_) => AlertDialog(
+                // Made AlertDialog const
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 100.0),
-                    SizedBox(height: 10.0),
-                    Text("Payment Successful!"),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 100.0,
+                    ),
+                    const SizedBox(height: 10.0),
+                    const Text("Payment Successful!"),
+                    // Use the amount from the state
+                    Text(
+                      "\$${state.amountAdded} has been added to your Tether balance.",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
                   ],
                 ),
               ),

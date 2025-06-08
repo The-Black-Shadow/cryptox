@@ -13,7 +13,14 @@ final class PaymentInitial extends PaymentState {}
 class PaymentLoading extends PaymentState {}
 
 // State when the payment is successful
-class PaymentSuccess extends PaymentState {}
+final class PaymentSuccess extends PaymentState {
+  final String amountAdded; // Add this property
+
+  const PaymentSuccess({required this.amountAdded});
+
+  @override
+  List<Object> get props => [amountAdded];
+}
 
 // State when the payment has failed
 class PaymentFailure extends PaymentState {

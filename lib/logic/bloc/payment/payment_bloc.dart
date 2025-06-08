@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
+import 'package:cryptox/data/repositories/wallet_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -11,7 +12,8 @@ part 'payment_event.dart';
 part 'payment_state.dart';
 
 class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
-  PaymentBloc() : super(PaymentInitial()) {
+  final WalletRepository _walletRepository;
+  PaymentBloc(this._walletRepository) : super(PaymentInitial()) {
     on<PaymentRequested>(_onPaymentRequested);
   }
 
@@ -22,7 +24,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     emit(PaymentLoading());
     try {
       // 1. Create payment intent
-      final paymentIntent = await _createPaymentIntent(event.amount, event.currency);
+      final paymentIntent = await _createPaymentIntent(
+        event.amount,
+        event.currency,
+      );
 
       if (paymentIntent == null) {
         throw Exception('Failed to create payment intent.');
@@ -40,10 +45,27 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       // 3. Present the payment sheet
       await Stripe.instance.presentPaymentSheet();
 
-      emit(PaymentSuccess());
+      // After successful payment, update the Firestore balance
+      try {
+        final double amountToAdd = double.parse(event.amount);
+        await _walletRepository.addTetherToBalance(amountToAdd: amountToAdd);
+        // Emit success state with the amount added
+        emit(PaymentSuccess(amountAdded: event.amount));
+      } catch (e) {
+        // This is a critical error: payment succeeded but crediting failed.
+        // You should have robust logging here for support purposes.
+        emit(
+          PaymentFailure(
+            error:
+                'Payment was successful, but updating your balance failed. Please contact support.',
+          ),
+        );
+      }
     } on StripeException catch (e) {
       debugPrint('Stripe payment failed: ${e.error.localizedMessage}');
-      emit(PaymentFailure(error: 'Payment failed: ${e.error.localizedMessage}'));
+      emit(
+        PaymentFailure(error: 'Payment failed: ${e.error.localizedMessage}'),
+      );
     } catch (e) {
       debugPrint('An unexpected error occurred: $e');
       emit(PaymentFailure(error: 'An unexpected error occurred: $e'));

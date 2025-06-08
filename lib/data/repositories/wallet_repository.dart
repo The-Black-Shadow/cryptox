@@ -145,4 +145,46 @@ class WalletRepository {
           throw Exception("Conversion failed: ${error.toString()}");
         });
   }
+
+  /// Adds Tether to the user's crypto balance after payment.
+  Future<void> addTetherToBalance({required double amountToAdd}) async {
+    final User? user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in. Cannot add funds.');
+    }
+
+    if (amountToAdd <= 0) {
+      throw Exception('Amount must be positive.');
+    }
+
+    final balanceDocRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('cryptoBalance')
+        .doc('balance');
+
+    try {
+      // FieldValue.increment is an atomic operation.
+      // It safely adds the amount to the existing value.
+      // If the 'tether' field doesn't exist, it will be created with this value.
+      await balanceDocRef.update({
+        'tether': FieldValue.increment(amountToAdd),
+      });
+    } on FirebaseException catch (e) {
+      // Handle cases where the document might not exist yet.
+      if (e.code == 'not-found') {
+        // Document doesn't exist, so create it with the initial amount.
+        // This is a good fallback, although your createUserInDatabase should handle the initial creation.
+        await balanceDocRef.set({
+          'tether': amountToAdd,
+        }, SetOptions(merge: true)); // merge:true adds the field without overwriting others
+      } else {
+        // Re-throw other Firebase errors
+        throw Exception('Firestore error: ${e.message}');
+      }
+    } catch (e) {
+      throw Exception('Failed to update Tether balance: $e');
+    }
+  }
 }
+

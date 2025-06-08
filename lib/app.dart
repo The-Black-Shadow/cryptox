@@ -64,7 +64,9 @@ class MyApp extends StatelessWidget {
               walletRepository: WalletRepository(),
             ),
           ),
-          BlocProvider(create: (context) => PaymentBloc()),
+          BlocProvider(
+            create: (context) => PaymentBloc(context.read<WalletRepository>()),
+          ),
         ],
         child: ScreenUtilInit(
           designSize: const Size(360, 690),
