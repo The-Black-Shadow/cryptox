@@ -7,6 +7,7 @@ import 'package:cryptox/logic/bloc/all_coin/all_coin_bloc.dart';
 import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
 import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
 import 'package:cryptox/logic/bloc/news/news_bloc.dart';
+import 'package:cryptox/logic/bloc/payment/payment_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
 import 'package:cryptox/logic/bloc/signin/signin_bloc.dart';
 import 'package:cryptox/logic/bloc/signup/signup_bloc.dart';
@@ -57,7 +58,13 @@ class MyApp extends StatelessWidget {
                 WalletBalanceBloc(walletRepository: WalletRepository())
                   ..add(LoadWalletBalance()),
           ),
-          BlocProvider(create: (context) => CryptoConvertBloc(coinRepository: CoinRepository(), walletRepository: WalletRepository())),
+          BlocProvider(
+            create: (context) => CryptoConvertBloc(
+              coinRepository: CoinRepository(),
+              walletRepository: WalletRepository(),
+            ),
+          ),
+          BlocProvider(create: (context) => PaymentBloc()),
         ],
         child: ScreenUtilInit(
           designSize: const Size(360, 690),

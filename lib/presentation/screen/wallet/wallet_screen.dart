@@ -4,9 +4,11 @@ import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
 import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
 import 'package:cryptox/presentation/widgets/custom_dropdown_field.dart';
 import 'package:cryptox/presentation/widgets/wallet_buton.dart';
+import 'package:cryptox/routes/route_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:debounce_throttle/debounce_throttle.dart';
+import 'package:go_router/go_router.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -270,10 +272,11 @@ class _WalletScreenState extends State<WalletScreen> {
               if (state is WalletBalanceLoaded) {
                 _initializeDropdownSelections(state.availableCoins);
               } else if (state is WalletBalanceError) {
-                if (mounted)
+                if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Wallet Error: ${state.message}')),
                   );
+                }
               }
             },
           ),
@@ -437,7 +440,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           WalletButton(
                             label: 'Deposit',
                             icon: Icons.file_download_outlined,
-                            onPressed: () {},
+                            onPressed: () =>
+                                context.pushNamed(Routes.PAYMENT_ROUTE),
                           ),
                         ],
                       ),
@@ -456,8 +460,9 @@ class _WalletScreenState extends State<WalletScreen> {
                             .map((coinInfo) => coinInfo.displayName)
                             .toList(),
                         onChanged: (value) {
-                          if (value != null && mounted)
+                          if (value != null && mounted) {
                             setState(() => selectedCoinName = value);
+                          }
                         },
                       ),
                       const SizedBox(height: 10),

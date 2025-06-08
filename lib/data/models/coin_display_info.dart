@@ -51,7 +51,7 @@ const List<CoinDisplayInfo> supportedCoinsDisplayInfo = [
   CoinDisplayInfo(
     firestoreKey: 'x',
     coinGeckoId: 'ripple',
-    displayName: 'X Token (XRP)',
+    displayName: 'XRP',
     symbol: 'XRP',
-  ), // Assuming 'x' refers to XRP and its ID is 'xrp'. Adjust as needed.
+  ),
 ];
