@@ -112,4 +112,38 @@ class AuthRepository {
       debugPrint("Error during sign out: $e");
     }
   }
+
+  // Fetches the UserModel from Firestore for the current user
+  Future<UserModel> fetchUserProfile() async {
+    try {
+      final docSnapshot = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .get();
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        final user = UserModel.fromJson(docSnapshot.data()!);
+        debugPrint("User fetched from Firestore: ${user.userEmail}");
+        return user;
+      } else {
+        throw Exception("User document not found in Firestore.");
+      }
+    } catch (error) {
+      debugPrint("Error fetching user profile: $error");
+      throw Exception(error);
+    }
+  }
+
+  // Updates specific fields in the user's document
+  Future<void> updateUserProfile(Map<String, dynamic> dataToUpdate) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .update(dataToUpdate);
+      debugPrint("User profile updated successfully with data: $dataToUpdate");
+    } catch (e) {
+      debugPrint("Error updating user profile: $e");
+      throw Exception("Failed to update profile.");
+    }
+  }
 }

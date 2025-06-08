@@ -8,13 +8,22 @@ sealed class ProfileState extends Equatable {
 }
 
 final class ProfileInitial extends ProfileState {}
+final class ProfileLoading extends ProfileState {}
+final class ProfileUpdating extends ProfileState {}
 
-final class FetchProfileSuccess extends ProfileState {
+final class ProfileLoaded extends ProfileState {
+  final UserModel user;
+  const ProfileLoaded(this.user);
   @override
-  List<Object> get props => [];
+  List<Object> get props => [user];
 }
 
-final class LogoutSuccess extends ProfileState {
+final class ProfileUpdateSuccess extends ProfileState {}
+final class ProfileError extends ProfileState {
+  final String message;
+  const ProfileError(this.message);
   @override
-  List<Object> get props => [];
+  List<Object> get props => [message];
 }
+
+final class LogoutSuccess extends ProfileState {}

@@ -7,16 +7,16 @@ sealed class ProfileEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class FetchProfileEvent extends ProfileEvent {
-  const FetchProfileEvent();
+// Event to fetch the user's profile data
+class FetchProfile extends ProfileEvent {}
 
+// Event to update the user's profile data
+class UpdateProfile extends ProfileEvent {
+  final Map<String, dynamic> dataToUpdate;
+  const UpdateProfile(this.dataToUpdate);
   @override
-  List<Object> get props => [];
+  List<Object> get props => [dataToUpdate];
 }
 
-class LogoutEvent extends ProfileEvent {
-  const LogoutEvent();
-
-  @override
-  List<Object> get props => [];
-}
+// Event for logging out
+class LogoutEvent extends ProfileEvent {}
