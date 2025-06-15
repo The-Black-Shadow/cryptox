@@ -13,12 +13,14 @@ class UserModel {
   String userEmail;
   String photoUrl;
   String phoneNumber;
+  String role;
 
   UserModel({
     required this.userName,
     required this.userEmail,
     required this.photoUrl,
     required this.phoneNumber,
+    required this.role,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -26,6 +28,7 @@ class UserModel {
     userEmail: json["user_email"],
     photoUrl: json["photo_url"],
     phoneNumber: json["phone_number"],
+    role: json["role"] ?? "user", // Default role if not provided
   );
 
   Map<String, dynamic> toJson() => {
@@ -33,5 +36,6 @@ class UserModel {
     "user_email": userEmail,
     "photo_url": photoUrl,
     "phone_number": phoneNumber,
+    "role": role,
   };
 }

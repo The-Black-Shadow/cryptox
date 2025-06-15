@@ -37,6 +37,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       userEmail: userEmail,
       photoUrl: LocalPreferences.getString('photoUrl'),
       phoneNumber: LocalPreferences.getString('phoneNumber'),
+      role: LocalPreferences.getString('role'), // Default to 'user'
     );
   }
 

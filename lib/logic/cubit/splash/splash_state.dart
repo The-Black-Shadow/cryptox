@@ -10,10 +10,10 @@ sealed class SplashState extends Equatable {
 final class SplashInitial extends SplashState {}
 
 final class SplashEnd extends SplashState {
-  final bool isAuthenticated;
+  final UserModel? userModel;
 
-  const SplashEnd({required this.isAuthenticated});
+  const SplashEnd({this.userModel});
 
   @override
-  List<Object?> get props => [isAuthenticated];
+  List<Object?> get props => [userModel];
 }

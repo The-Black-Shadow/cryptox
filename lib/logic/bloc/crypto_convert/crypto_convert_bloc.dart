@@ -25,6 +25,9 @@ class CryptoConvertBloc extends Bloc<CryptoConvertEvent, CryptoConvertState> {
       transformer: restartable(),
     );
     on<ExecuteConversionRequested>(_onExecuteConversionRequested);
+    on<ResetCryptoConvert>((event, emit) {
+      emit(CryptoConvertInitial());
+    });
   }
 
   Future<void> _onConversionInputsChanged(

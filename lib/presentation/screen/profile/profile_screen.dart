@@ -1,5 +1,7 @@
 import 'package:cryptox/data/models/user_model.dart';
+import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
+import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
 import 'package:cryptox/routes/route_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,12 +18,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch the profile data when the screen is first loaded
     context.read<ProfileBloc>().add(FetchProfile());
   }
 
-  // Reusable function to show the edit dialog
-  void _showEditDialog(BuildContext context, String currentVal, String fieldKey, String label) {
+  void _showEditDialog(
+    BuildContext context,
+    String currentVal,
+    String fieldKey,
+    String label,
+  ) {
     final controller = TextEditingController(text: currentVal);
     showDialog(
       context: context,
@@ -43,8 +48,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                // Dispatch event to update profile
-                context.read<ProfileBloc>().add(UpdateProfile({fieldKey: controller.text}));
+                context.read<ProfileBloc>().add(
+                  UpdateProfile({fieldKey: controller.text}),
+                );
                 Navigator.of(dialogContext).pop();
               },
               child: const Text('Save'),
@@ -75,19 +81,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
+          // --- THIS IS THE KEY CHANGE ---
           if (state is LogoutSuccess) {
-            // Navigate to welcome screen on successful logout
-            // Ensure the route name is correct from your GoRouter setup
+            // Before navigating, reset all BLoCs that hold user-specific data.
+            context.read<WalletBalanceBloc>().add(ResetWalletBalance());
+            context.read<CryptoConvertBloc>().add(ResetCryptoConvert());
+
+            // Now, navigate the user to the welcome screen
             context.goNamed(Routes.WELCOME_ROUTE);
           }
           if (state is ProfileError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
             );
           }
           if (state is ProfileUpdateSuccess) {
-             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Profile updated successfully!"), backgroundColor: Colors.green),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Profile updated successfully!"),
+                backgroundColor: Colors.green,
+              ),
             );
           }
         },
@@ -105,78 +121,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: BlocBuilder<ProfileBloc, ProfileState>(
               builder: (context, state) {
                 if (state is ProfileLoading) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
                 }
                 if (state is ProfileLoaded) {
                   final UserModel user = state.user;
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 32.0,
+                      ),
                       child: Column(
                         children: [
                           CircleAvatar(
                             radius: 60,
-                            backgroundImage: user.photoUrl.isNotEmpty ? NetworkImage(user.photoUrl) : null,
-                            child: user.photoUrl.isEmpty ? const Icon(Icons.person, size: 60) : null,
+                            backgroundImage: user.photoUrl.isNotEmpty
+                                ? NetworkImage(user.photoUrl)
+                                : null,
+                            child: user.photoUrl.isEmpty
+                                ? const Icon(Icons.person, size: 60)
+                                : null,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Hello, ${user.userName}',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 32),
                           Card(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                             elevation: 6,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                                horizontal: 16,
+                              ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                   ListTile(
-                                    leading: const Icon(Icons.person, color: Colors.blueGrey),
+                                  ListTile(
+                                    leading: const Icon(
+                                      Icons.person,
+                                      color: Colors.blueGrey,
+                                    ),
                                     title: Text(user.userName),
                                     trailing: IconButton(
                                       icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () => _showEditDialog(context, user.userName, 'user_name', 'Username'),
+                                      onPressed: () => _showEditDialog(
+                                        context,
+                                        user.userName,
+                                        'user_name',
+                                        'Username',
+                                      ),
                                     ),
                                   ),
                                   const Divider(),
                                   ListTile(
-                                    leading: const Icon(Icons.email, color: Colors.blueGrey),
+                                    leading: const Icon(
+                                      Icons.email,
+                                      color: Colors.blueGrey,
+                                    ),
                                     title: Text(user.userEmail),
-                                    // Email is usually not editable
                                   ),
                                   const Divider(),
                                   ListTile(
-                                    leading: const Icon(Icons.phone, color: Colors.blueGrey),
+                                    leading: const Icon(
+                                      Icons.phone,
+                                      color: Colors.blueGrey,
+                                    ),
                                     title: Text(user.phoneNumber),
                                     trailing: IconButton(
                                       icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () => _showEditDialog(context, user.phoneNumber, 'phone_number', 'Phone Number'),
+                                      onPressed: () => _showEditDialog(
+                                        context,
+                                        user.phoneNumber,
+                                        'phone_number',
+                                        'Phone Number',
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                           if(state is ProfileUpdating) ...[
+                          if (state is ProfileUpdating) ...[
                             const SizedBox(height: 20),
                             const CircularProgressIndicator(),
                           ],
                           const Spacer(),
                           Text(
                             "Cryptox",
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white60),
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(color: Colors.white60),
                           ),
                         ],
                       ),
                     ),
                   );
                 }
-                // Initial or Error state
-                return const Center(child: Text('Loading profile...', style: TextStyle(color: Colors.white)));
+                return const Center(
+                  child: Text(
+                    'Loading profile...',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                );
               },
             ),
           ),

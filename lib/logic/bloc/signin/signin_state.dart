@@ -11,7 +11,16 @@ final class SigninInitial extends SigninState {}
 
 final class SigninLoading extends SigninState {}
 
-final class SigninSuccess extends SigninState {}
+// --- MODIFIED STATE ---
+// This state now holds the user's data, including their role.
+final class SigninSuccess extends SigninState {
+  final UserModel userModel;
+
+  const SigninSuccess(this.userModel);
+
+  @override
+  List<Object> get props => [userModel];
+}
 
 final class SigninFailure extends SigninState {
   final String error;

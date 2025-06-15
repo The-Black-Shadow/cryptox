@@ -1,6 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
 import 'package:cryptox/data/models/news_model.dart';
+import 'package:cryptox/presentation/screen/admin/admin_screen.dart';
 import 'package:cryptox/presentation/screen/all_coin/allcoin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signup_screen.dart';
@@ -34,6 +35,12 @@ class RoutePages {
         name: Routes.WELCOME_ROUTE,
         pageBuilder: (context, state) =>
             const MaterialPage(child: WelcomeScreen()),
+      ),
+
+      GoRoute(
+        path: '/admin', // The path for the admin screen
+        name: Routes.ADMIN_ROUTE,
+        builder: (context, state) => const AdminScreen(),
       ),
 
       // Auth routes (independent)

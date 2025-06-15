@@ -15,32 +15,47 @@ import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
 import 'package:cryptox/logic/cubit/splash/splash_cubit.dart';
 import 'package:cryptox/routes/route_pages.dart';
 import 'package:cryptox/theme/theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthRepository authRepository;
+  final WalletRepository walletRepository;
+  final CoinRepository coinRepository;
+  const MyApp({
+    super.key,
+    required this.authRepository,
+    required this.walletRepository,
+    required this.coinRepository,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider(create: (context) => AuthRepository()),
-        RepositoryProvider(create: (context) => CoinRepository()),
+        RepositoryProvider.value(value: authRepository),
+        RepositoryProvider.value(value: walletRepository),
+        RepositoryProvider.value(value: coinRepository),
         RepositoryProvider(create: (context) => AllCoinRepository()),
         RepositoryProvider(create: (context) => NewsRepository()),
         RepositoryProvider(create: (context) => WalletRepository()),
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (context) => SplashCubit()..startSplash()),
+          BlocProvider(
+            create: (context) => SplashCubit(
+              context.read<AuthRepository>(),
+              FirebaseAuth.instance,
+            )..startSplash(),
+          ),
           BlocProvider(create: (context) => SignupBloc()),
           BlocProvider(
-            create: (context) => SigninBloc((context.read<AuthRepository>())),
+            create: (context) => SigninBloc(RepositoryProvider.of<AuthRepository>(context)),
           ),
           BlocProvider(
-            create: (context) => ProfileBloc((context.read<AuthRepository>())),
+            create: (context) => ProfileBloc(RepositoryProvider.of<AuthRepository>(context)),
           ),
           BlocProvider(
             create: (context) =>
@@ -55,17 +70,16 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider(
             create: (context) =>
-                WalletBalanceBloc(walletRepository: WalletRepository())
-                  ..add(LoadWalletBalance()),
+                WalletBalanceBloc(walletRepository: RepositoryProvider.of<WalletRepository>(context)),
           ),
           BlocProvider(
             create: (context) => CryptoConvertBloc(
-              coinRepository: CoinRepository(),
-              walletRepository: WalletRepository(),
+              coinRepository: RepositoryProvider.of<CoinRepository>(context),
+              walletRepository: RepositoryProvider.of<WalletRepository>(context),
             ),
           ),
           BlocProvider(
-            create: (context) => PaymentBloc(context.read<WalletRepository>()),
+            create: (context) => PaymentBloc(RepositoryProvider.of<WalletRepository>(context),),
           ),
         ],
         child: ScreenUtilInit(

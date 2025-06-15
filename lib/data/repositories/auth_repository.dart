@@ -10,49 +10,51 @@ class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<User?> signInWithGoogle() async {
+ Future<UserModel?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleSignIn = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-      if (googleSignIn == null) {
-        // User canceled the sign-in process
+      if (googleUser == null) {
         debugPrint("User canceled the signin process.");
         return null;
       }
 
-      final GoogleSignInAuthentication googleSignInAuthentication =
-          await googleSignIn.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleSignInAuthentication.accessToken,
+        accessToken: googleAuth.accessToken,
       );
 
-      final UserCredential authResult = await _auth.signInWithCredential(
-        credential,
-      );
+      final UserCredential authResult = await _auth.signInWithCredential(credential);
+      final User? user = authResult.user;
 
-      if (authResult.user != null) {
-        createUserInDatabase(authResult.user!);
+      if (user != null) {
+        // This now creates the user if they don't exist
+        await createUserInDatabase(user); 
+        // After signing in, fetch the full profile (which includes the role)
+        final userModel = await fetchUserProfile();
+        return userModel;
       }
-      debugPrint('User: ${authResult.user?.email}');
-      return authResult.user;
+      return null;
     } catch (error) {
       debugPrint("Error signing in with Google: $error");
       return null;
     }
   }
 
+
   Future<void> createUserInDatabase(User user) async {
     try {
-      final DocumentSnapshot userDoc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      final userDocRef = _firestore.collection('users').doc(user.uid);
+      final userDoc = await userDocRef.get();
+
       await _firestore.collection('users').doc(user.uid).get();
+
       final data = UserModel(
         userName: user.displayName ?? 'No Name',
         userEmail: user.email ?? 'No Email',
         photoUrl: user.photoURL ?? '',
         phoneNumber: user.phoneNumber ?? '+88017xxxxxxxx',
+        role: 'user', // Default role for new users
       );
 
       if (!userDoc.exists) {
@@ -62,6 +64,7 @@ class AuthRepository {
           userEmail: user.email ?? 'No Email',
           photoUrl: user.photoURL ?? '',
           phoneNumber: user.phoneNumber ?? '+88017xxxxxxxx',
+          role: 'user', // Default role for new users
         );
 
         await _firestore.collection('users').doc(user.uid).set(data.toJson());
@@ -91,6 +94,7 @@ class AuthRepository {
       LocalPreferences.setString('photoUrl', data.photoUrl);
       LocalPreferences.setString('phoneNumber', data.phoneNumber);
       LocalPreferences.setString('uid', user.uid);
+      LocalPreferences.setString('role', data.role); // Save role as well
     } catch (e) {
       debugPrint("Failed to create user in Firestore: $e");
     }

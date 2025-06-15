@@ -1,5 +1,8 @@
 import 'package:cryptox/app.dart';
 import 'package:cryptox/data/preference/local_preference.dart';
+import 'package:cryptox/data/repositories/auth_repository.dart';
+import 'package:cryptox/data/repositories/coin_repository.dart';
+import 'package:cryptox/data/repositories/wallet_repository.dart';
 import 'package:cryptox/firebase_options.dart';
 import 'package:cryptox/logic/bloc/bloc_observer.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -21,5 +24,14 @@ Future<void> main() async {
   Bloc.observer = MyBlocObserver();
   // Initialize local preferences
   await LocalPreferences().init();
-  runApp(const MyApp());
+
+  // Initialize your repositories once here
+  final authRepository = AuthRepository();
+  final walletRepository = WalletRepository();
+  final coinRepository = CoinRepository();
+  runApp( MyApp(
+    authRepository: authRepository,
+    walletRepository: walletRepository,
+    coinRepository: coinRepository,
+  ));
 }

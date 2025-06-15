@@ -4,6 +4,7 @@ part of 'route_pages.dart';
 
 class Routes {
   static const String SPLASH_ROUTE = '/';
+  static const String ADMIN_ROUTE = '/admin'; 
   static const String HOME_ROUTE = '/home';
   static const String WELCOME_ROUTE = '/welcome';
   static const String SIGNIN_ROUTE = '/signin';

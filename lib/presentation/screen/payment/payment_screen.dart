@@ -1,7 +1,7 @@
 import 'package:cryptox/logic/bloc/payment/payment_bloc.dart';
+import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 class PaymentScreen extends StatelessWidget {
   const PaymentScreen({super.key});
 
@@ -14,14 +14,18 @@ class PaymentScreen extends StatelessWidget {
         title: const Text('Deposit USDT'),
         backgroundColor: Colors.deepPurple,
       ),
-
       body: BlocConsumer<PaymentBloc, PaymentState>(
         listener: (context, state) {
           if (state is PaymentSuccess) {
+            // --- THIS IS THE KEY CHANGE ---
+            // After a successful payment, explicitly tell the global WalletBalanceBloc
+            // to re-trigger its listener. This ensures the UI will have the
+            // latest balance when the user navigates back.
+            context.read<WalletBalanceBloc>().add(LoadWalletBalance());
+
             showDialog(
               context: context,
               builder: (_) => AlertDialog(
-                // Made AlertDialog const
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -32,7 +36,6 @@ class PaymentScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10.0),
                     const Text("Payment Successful!"),
-                    // Use the amount from the state
                     Text(
                       "\$${state.amountAdded} has been added to your Tether balance.",
                       textAlign: TextAlign.center,
@@ -59,12 +62,10 @@ class PaymentScreen extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          // Show a loading indicator while payment is processing
           if (state is PaymentLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Show the main payment UI
           return Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -72,7 +73,7 @@ class PaymentScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 const Text(
-                  'Enter Amount',
+                  'Deposit USDT via Stripe',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -88,18 +89,11 @@ class PaymentScreen extends StatelessWidget {
                   ),
                   style: const TextStyle(fontSize: 22),
                   decoration: InputDecoration(
-                    labelText: 'Amount',
+                    labelText: 'Amount in USD',
                     hintText: 'e.g., 50.00',
                     prefixIcon: const Icon(Icons.attach_money),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.deepPurple,
-                        width: 2.0,
-                      ),
                     ),
                   ),
                 ),
@@ -112,13 +106,12 @@ class PaymentScreen extends StatelessWidget {
                       );
                       return;
                     }
-                    // Add the event to trigger the BLoC
                     context.read<PaymentBloc>().add(
-                      PaymentRequested(
-                        amount: amountController.text,
-                        currency: 'USD',
-                      ),
-                    );
+                          PaymentRequested(
+                            amount: amountController.text,
+                            currency: 'USD',
+                          ),
+                        );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
@@ -126,7 +119,6 @@ class PaymentScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 5,
                   ),
                   child: const Text(
                     'Pay with Stripe',
@@ -145,3 +137,4 @@ class PaymentScreen extends StatelessWidget {
     );
   }
 }
+

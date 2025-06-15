@@ -7,3 +7,5 @@ sealed class WalletBalanceEvent extends Equatable {
 }
 
 class LoadWalletBalance extends WalletBalanceEvent {}
+
+class ResetWalletBalance extends WalletBalanceEvent {}

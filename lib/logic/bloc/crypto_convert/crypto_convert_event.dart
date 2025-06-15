@@ -36,3 +36,4 @@ class ExecuteConversionRequested extends CryptoConvertEvent {
   @override
   List<Object?> get props => [fromCoinFirestoreKey, toCoinFirestoreKey, amountFrom];
 }
+class ResetCryptoConvert extends CryptoConvertEvent {}
