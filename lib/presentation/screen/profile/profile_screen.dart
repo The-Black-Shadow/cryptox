@@ -1,7 +1,7 @@
 import 'package:cryptox/data/models/user_model.dart';
-import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
 import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
+import 'package:cryptox/logic/bloc/send_crypto/send_crypto_bloc.dart'; // Changed import
 import 'package:cryptox/routes/route_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,11 +81,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
-          // --- THIS IS THE KEY CHANGE ---
+          // --- THIS IS THE CORRECTED LOGIC ---
           if (state is LogoutSuccess) {
             // Before navigating, reset all BLoCs that hold user-specific data.
             context.read<WalletBalanceBloc>().add(ResetWalletBalance());
-            context.read<CryptoConvertBloc>().add(ResetCryptoConvert());
+            context.read<SendCryptoBloc>().add(ResetSendCrypto()); // Dispatch correct event
 
             // Now, navigate the user to the welcome screen
             context.goNamed(Routes.WELCOME_ROUTE);

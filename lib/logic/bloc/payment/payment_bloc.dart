@@ -13,7 +13,10 @@ part 'payment_state.dart';
 
 class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final WalletRepository _walletRepository;
-  PaymentBloc(this._walletRepository) : super(PaymentInitial()) {
+
+  PaymentBloc({required WalletRepository walletRepository})
+      : _walletRepository = walletRepository,
+        super(PaymentInitial()) {
     on<PaymentRequested>(_onPaymentRequested);
   }
 
@@ -23,49 +26,44 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   ) async {
     emit(PaymentLoading());
     try {
-      // 1. Create payment intent
-      final paymentIntent = await _createPaymentIntent(
-        event.amount,
-        event.currency,
-      );
-
+      // 1. Create payment intent with Stripe
+      final paymentIntent = await _createPaymentIntent(event.amount, event.currency);
       if (paymentIntent == null) {
         throw Exception('Failed to create payment intent.');
       }
 
-      // 2. Initialize the payment sheet
+      // 2. Initialize and present the payment sheet
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: paymentIntent['client_secret'],
-          merchantDisplayName: 'Flutter Stripe Demo',
+          merchantDisplayName: 'CryptoX Deposit',
           style: ThemeMode.light,
         ),
       );
-
-      // 3. Present the payment sheet
       await Stripe.instance.presentPaymentSheet();
 
-      // After successful payment, update the Firestore balance
+      // --- 3. UPDATED LOGIC ---
+      // After successful payment, add funds as a new parcel.
       try {
         final double amountToAdd = double.parse(event.amount);
-        await _walletRepository.addTetherToBalance(amountToAdd: amountToAdd);
+        // Call the new method to create a traceable parcel for the deposit
+        await _walletRepository.addTetherAsParcel(amountToAdd: amountToAdd);
+        
         // Emit success state with the amount added
         emit(PaymentSuccess(amountAdded: event.amount));
       } catch (e) {
         // This is a critical error: payment succeeded but crediting failed.
-        // You should have robust logging here for support purposes.
-        emit(
-          PaymentFailure(
-            error:
-                'Payment was successful, but updating your balance failed. Please contact support.',
-          ),
-        );
+        emit(PaymentFailure(
+          error: 'Payment was successful, but updating your balance failed. Please contact support.',
+        ));
       }
     } on StripeException catch (e) {
+      if (e.error.code == FailureCode.Canceled) {
+        emit(PaymentInitial()); // User cancelled, go back to initial state
+        return;
+      }
       debugPrint('Stripe payment failed: ${e.error.localizedMessage}');
-      emit(
-        PaymentFailure(error: 'Payment failed: ${e.error.localizedMessage}'),
-      );
+      emit(PaymentFailure(error: 'Payment failed: ${e.error.localizedMessage}'));
     } catch (e) {
       debugPrint('An unexpected error occurred: $e');
       emit(PaymentFailure(error: 'An unexpected error occurred: $e'));
@@ -76,6 +74,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     String amount,
     String currency,
   ) async {
+    // This logic remains the same
     try {
       final calculatedAmount = (double.parse(amount) * 100).round().toString();
       Map<String, dynamic> body = {

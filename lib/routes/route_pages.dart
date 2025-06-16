@@ -11,6 +11,7 @@ import 'package:cryptox/presentation/screen/news_screen.dart/news_detail_screen.
 import 'package:cryptox/presentation/screen/payment/payment_screen.dart';
 import 'package:cryptox/presentation/screen/profile/profile_screen.dart';
 import 'package:cryptox/presentation/screen/splash/splash_screen.dart';
+import 'package:cryptox/presentation/screen/transaction_history/transaction_history.dart';
 import 'package:cryptox/presentation/screen/wallet/wallet_screen.dart';
 import 'package:cryptox/presentation/screen/welcome/welcome_screen.dart';
 import 'package:cryptox/presentation/screen/wrapper.dart';
@@ -41,6 +42,12 @@ class RoutePages {
         path: '/admin', // The path for the admin screen
         name: Routes.ADMIN_ROUTE,
         builder: (context, state) => const AdminScreen(),
+      ),
+
+      GoRoute(
+        path: '/history', // The path for the transaction history screen
+        name: Routes.TRANSACTION_HISTORY_ROUTE,
+        builder: (context, state) => const TransactionHistoryScreen(),
       ),
 
       // Auth routes (independent)

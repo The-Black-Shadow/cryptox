@@ -15,4 +15,5 @@ class Routes {
   static const String ALL_NEWS_ROUTE = '/all_news';
   static const String NEWS_DETAIL_ROUTE = '/news_detail';
   static const String PAYMENT_ROUTE = '/payment';
+  static const String TRANSACTION_HISTORY_ROUTE = '/transaction-history';
 }

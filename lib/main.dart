@@ -1,5 +1,6 @@
 import 'package:cryptox/app.dart';
 import 'package:cryptox/data/preference/local_preference.dart';
+import 'package:cryptox/data/repositories/admin_repository.dart';
 import 'package:cryptox/data/repositories/auth_repository.dart';
 import 'package:cryptox/data/repositories/coin_repository.dart';
 import 'package:cryptox/data/repositories/wallet_repository.dart';
@@ -29,9 +30,11 @@ Future<void> main() async {
   final authRepository = AuthRepository();
   final walletRepository = WalletRepository();
   final coinRepository = CoinRepository();
+  final adminRepository = AdminRepository();
   runApp( MyApp(
     authRepository: authRepository,
     walletRepository: walletRepository,
     coinRepository: coinRepository,
+    adminRepository: adminRepository,
   ));
 }
