@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 class TransactionRecordModel extends Equatable {
   final String transactionId;
   final String status;
+  final String transactionType;
   final Timestamp timestamp;
   final String coinType;
   final double totalAmount;
@@ -11,13 +12,14 @@ class TransactionRecordModel extends Equatable {
   final String fromUserEmail;
   final String toUserId;
   final String toUserEmail;
-  final List<String> inputParcelIds; // For efficient querying
+  final List<String> inputParcelIds;
   final List<Map<String, dynamic>> inputs;
   final List<Map<String, dynamic>> outputs;
 
   const TransactionRecordModel({
     required this.transactionId,
     required this.status,
+    required this.transactionType,
     required this.timestamp,
     required this.coinType,
     required this.totalAmount,
@@ -34,6 +36,7 @@ class TransactionRecordModel extends Equatable {
     return {
       'transactionId': transactionId,
       'status': status,
+      'transactionType': transactionType,
       'timestamp': timestamp,
       'coinType': coinType,
       'totalAmount': totalAmount,
@@ -51,6 +54,7 @@ class TransactionRecordModel extends Equatable {
     return TransactionRecordModel(
       transactionId: json['transactionId'] ?? '',
       status: json['status'] ?? 'unknown',
+      transactionType: json['transactionType'] ?? 'send',
       timestamp: json['timestamp'] as Timestamp,
       coinType: json['coinType'] ?? '',
       totalAmount: (json['totalAmount'] as num? ?? 0).toDouble(),

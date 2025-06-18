@@ -1,8 +1,11 @@
 import 'package:cryptox/data/models/transaction_record_model.dart';
 import 'package:cryptox/logic/bloc/admin_trace/admin_trace_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
+import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
+import 'package:cryptox/routes/route_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class AdminScreen extends StatelessWidget {
@@ -14,77 +17,87 @@ class AdminScreen extends StatelessWidget {
       create: (context) =>
           AdminTraceBloc(adminRepository: RepositoryProvider.of(context))
             ..add(LoadRecentTransactions()),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Admin Dashboard'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                context.read<ProfileBloc>().add(LogoutEvent());
-              },
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: TransactionSearchBox(),
-            ),
-            Expanded(
-              child: BlocBuilder<AdminTraceBloc, AdminTraceState>(
-                builder: (context, state) {
-                  if (state is AdminTraceLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (state is AdminTraceLoaded) {
-                    if (state.transactions.isEmpty) {
-                      return const Center(
-                        child: Text("No transactions found."),
-                      );
-                    }
-                    return RefreshIndicator(
-                      onRefresh: () async {
-                        context.read<AdminTraceBloc>().add(
-                          LoadRecentTransactions(),
-                        );
-                      },
-                      child: ListView.builder(
-                        itemCount: state.transactions.length,
-                        itemBuilder: (context, index) {
-                          final transaction = state.transactions[index];
-                          return TransactionCard(transaction: transaction);
-                        },
-                      ),
-                    );
-                  }
-                  if (state is AdminTraceError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text("Error: ${state.message}"),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () => context.read<AdminTraceBloc>().add(
-                              LoadRecentTransactions(),
-                            ),
-                            child: const Text("Show Recent Transactions"),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return const Center(
-                    child: Text(
-                      "Search for a transaction ID or pull to refresh.",
-                    ),
-                  );
+      child: BlocListener<ProfileBloc, ProfileState>(
+        listener: (context, state) {
+          if (state is LogoutSuccess) {
+            // Reset BLoCs on logout
+            context.read<WalletBalanceBloc>().add(ResetWalletBalance());
+            // Add other resets if needed, e.g., for SendCryptoBloc
+            context.goNamed(Routes.WELCOME_ROUTE);
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Admin Dashboard'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () {
+                  context.read<ProfileBloc>().add(LogoutEvent());
                 },
               ),
-            ),
-          ],
+            ],
+          ),
+          body: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: TransactionSearchBox(),
+              ),
+              Expanded(
+                child: BlocBuilder<AdminTraceBloc, AdminTraceState>(
+                  builder: (context, state) {
+                    if (state is AdminTraceLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (state is AdminTraceLoaded) {
+                      if (state.transactions.isEmpty) {
+                        return const Center(
+                          child: Text("No transactions found."),
+                        );
+                      }
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          context.read<AdminTraceBloc>().add(
+                            LoadRecentTransactions(),
+                          );
+                        },
+                        child: ListView.builder(
+                          itemCount: state.transactions.length,
+                          itemBuilder: (context, index) {
+                            final transaction = state.transactions[index];
+                            return TransactionCard(transaction: transaction);
+                          },
+                        ),
+                      );
+                    }
+                    if (state is AdminTraceError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("Error: ${state.message}"),
+                            const SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () => context
+                                  .read<AdminTraceBloc>()
+                                  .add(LoadRecentTransactions()),
+                              child: const Text("Show Recent Transactions"),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return const Center(
+                      child: Text(
+                        "Search for a transaction ID or pull to refresh.",
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -138,14 +151,23 @@ class TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final date = transaction.timestamp.toDate();
-    final formattedDate = DateFormat('MMM dd, yyyy – hh:mm a').format(date);
+    final formattedDate = DateFormat('MMM dd, hh:mm a').format(date);
+
+    final String amountString;
+    if (transaction.coinType.toLowerCase() == 'tether') {
+      amountString =
+          '${transaction.totalAmount.toStringAsFixed(2)} ${transaction.coinType.toUpperCase()}';
+    } else {
+      amountString =
+          '${transaction.totalAmount.toStringAsFixed(10)} ${transaction.coinType.toUpperCase()}';
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
       child: ExpansionTile(
         title: Text(
-          '${transaction.totalAmount.toStringAsFixed(2)} ${transaction.coinType.toUpperCase()}',
+          amountString,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(formattedDate),
@@ -165,63 +187,94 @@ class TransactionCard extends StatelessWidget {
                 _buildTraceRow('To:', transaction.toUserEmail),
                 const SizedBox(height: 16),
                 const Text(
-                  "Inputs (Parcels Consumed):",
+                  "Inputs (Funds Consumed):",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
+                // --- CORRECTED LOGIC FOR INPUTS ---
                 ...transaction.inputs.map((input) {
-                  final amount = (input['amount'] as num? ?? 0).toStringAsFixed(
-                    2,
-                  );
-                  return SelectableText(
-                    "  - From ${transaction.fromUserEmail} [${amount} USDT]",
-                    style: const TextStyle(fontSize: 12),
-                  );
+                  // Check if the input is a parcel or a simple balance
+                  if (input.containsKey('parcelId')) {
+                    final amount = (input['amount'] as num? ?? 0)
+                        .toStringAsFixed(2);
+                    return SelectableText(
+                      "  - From ${transaction.fromUserEmail} [$amount USDT Parcel]",
+                      style: const TextStyle(fontSize: 12),
+                    );
+                  } else {
+                    final amount = (input['amount'] as num? ?? 0)
+                        .toStringAsFixed(10);
+                    final coin = (input['coin'] as String? ?? 'N/A')
+                        .toUpperCase();
+                    return SelectableText(
+                      "  - From ${transaction.fromUserEmail} [$amount $coin Balance]",
+                      style: const TextStyle(fontSize: 12),
+                    );
+                  }
                 }),
                 const SizedBox(height: 16),
                 const Text(
-                  "Outputs (Parcels Created):",
+                  "Outputs (Funds Created):",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
+                // --- CORRECTED LOGIC FOR OUTPUTS ---
                 ...transaction.outputs.map((output) {
-                  final bool isChange =
-                      output['recipientUserId'] == transaction.fromUserId;
-                  final amount = (output['amount'] as num? ?? 0)
-                      .toStringAsFixed(2);
-                  final recipientEmail = isChange
-                      ? transaction.fromUserEmail
-                      : transaction.toUserEmail;
-                  final newParcelId = output['newParcelId'] as String;
+                  // Check if the output is a parcel or a simple balance
+                  if (output.containsKey('newParcelId')) {
+                    final bool isChange =
+                        output['recipientUserId'] == transaction.fromUserId;
+                    final amount = (output['amount'] as num? ?? 0)
+                        .toStringAsFixed(2);
+                    final recipientEmail = isChange
+                        ? transaction.fromUserEmail
+                        : transaction.toUserEmail;
+                    final newParcelId =
+                        output['newParcelId'] as String? ?? 'N/A';
 
-                  return InkWell(
-                    onTap: () {
-                      context.read<AdminTraceBloc>().add(
-                        TraceParcelForward(newParcelId),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              "  - $amount USDT to $recipientEmail (${isChange ? 'Change' : 'Recipient'})",
-                              style: const TextStyle(fontSize: 12),
+                    return InkWell(
+                      onTap: () {
+                        context.read<AdminTraceBloc>().add(
+                          TraceParcelForward(newParcelId),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                "  - $amount USDT Parcel to $recipientEmail (${isChange ? 'Change' : 'Recipient'})",
+                                style: const TextStyle(fontSize: 12),
+                              ),
                             ),
-                          ),
-                          const Icon(
-                            Icons.track_changes,
-                            size: 16,
-                            color: Colors.blue,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            "Trace",
-                            style: TextStyle(fontSize: 12, color: Colors.blue),
-                          ),
-                        ],
+                            const Icon(
+                              Icons.track_changes,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Trace",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  } else {
+                    final amount = (output['amount'] as num? ?? 0)
+                        .toStringAsFixed(10);
+                    final coin = (output['coin'] as String? ?? 'N/A')
+                        .toUpperCase();
+                    final recipientEmail = transaction
+                        .toUserEmail; // The user converting receives the balance
+                    return SelectableText(
+                      "  - $amount $coin credited to $recipientEmail",
+                      style: const TextStyle(fontSize: 12),
+                    );
+                  }
                 }),
               ],
             ),

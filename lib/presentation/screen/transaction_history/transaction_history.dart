@@ -77,8 +77,18 @@ class UserTransactionCard extends StatelessWidget {
     final String title = isSentTransaction
         ? 'Sent to: ${transaction.toUserEmail}'
         : 'Received from: ${transaction.fromUserEmail}';
-    final String amountString =
-        '${isSentTransaction ? '-' : '+'} ${transaction.totalAmount.toStringAsFixed(2)} ${transaction.coinType.toUpperCase()}';
+
+    // --- THIS IS THE MODIFIED LOGIC ---
+    final String amountString;
+    // Check if the coin type is Tether (case-insensitive check)
+    if (transaction.coinType.toLowerCase() == 'tether') {
+      amountString =
+          '${isSentTransaction ? '-' : '+'} ${transaction.totalAmount.toStringAsFixed(2)} ${transaction.coinType.toUpperCase()}';
+    } else {
+      // For all other coins, use 10 decimal places
+      amountString =
+          '${isSentTransaction ? '-' : '+'} ${transaction.totalAmount.toStringAsFixed(10)} ${transaction.coinType.toUpperCase()}';
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -88,8 +98,6 @@ class UserTransactionCard extends StatelessWidget {
           child: Icon(iconData, color: iconColor),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        // --- THIS IS THE KEY CHANGE ---
-        // The subtitle is now a Column to hold both the date and the transaction ID.
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

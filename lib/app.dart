@@ -7,6 +7,7 @@ import 'package:cryptox/data/repositories/wallet_repository.dart';
 import 'package:cryptox/logic/bloc/admin_trace/admin_trace_bloc.dart';
 import 'package:cryptox/logic/bloc/all_coin/all_coin_bloc.dart';
 import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
+import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
 import 'package:cryptox/logic/bloc/send_crypto/send_crypto_bloc.dart'; // Corrected import
 import 'package:cryptox/logic/bloc/news/news_bloc.dart';
 import 'package:cryptox/logic/bloc/payment/payment_bloc.dart';
@@ -102,6 +103,12 @@ class MyApp extends StatelessWidget {
           BlocProvider(
             create: (context) =>
                 PaymentBloc(walletRepository: context.read<WalletRepository>()),
+          ),
+          BlocProvider(
+            create: (context) => CryptoConvertBloc(
+              coinRepository: coinRepository,
+              walletRepository: walletRepository,
+            ),
           ),
           BlocProvider(
             create: (context) => AdminTraceBloc(
