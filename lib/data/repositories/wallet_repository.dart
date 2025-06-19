@@ -8,14 +8,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 
-
 class WalletRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _firebaseAuth;
 
   WalletRepository({FirebaseFirestore? firestore, FirebaseAuth? firebaseAuth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   /// Watches both simple balances and Tether parcels, combining them into a single real-time stream.
   Stream<CryptoBalance> watchCurrentUserCryptoBalance() {
@@ -32,11 +31,11 @@ class WalletRepository {
         .doc('balance')
         .snapshots()
         .map((snapshot) {
-      if (snapshot.exists && snapshot.data() != null) {
-        return snapshot.data()!;
-      }
-      return <String, dynamic>{};
-    });
+          if (snapshot.exists && snapshot.data() != null) {
+            return snapshot.data()!;
+          }
+          return <String, dynamic>{};
+        });
 
     // Stream 2: For traceable Tether (USDT) balance, calculated from parcels
     final tetherParcelsStream = _firestore
@@ -45,29 +44,34 @@ class WalletRepository {
         .collection('tether_parcels')
         .snapshots()
         .map((snapshot) {
-      double totalTether = 0.0;
-      for (var doc in snapshot.docs) {
-        totalTether += (doc.data()['amount'] as num? ?? 0).toDouble();
-      }
-      return totalTether;
-    });
+          double totalTether = 0.0;
+          for (var doc in snapshot.docs) {
+            totalTether += (doc.data()['amount'] as num? ?? 0).toDouble();
+          }
+          return totalTether;
+        });
 
     // Combine the two streams using rxdart to create a single CryptoBalance object
-    return Rx.combineLatest2(
-      simpleBalanceStream,
-      tetherParcelsStream,
-      (Map<String, dynamic> simpleBalances, double tetherBalance) {
-        return CryptoBalance(
-          bitcoin: (simpleBalances['bitcoin'] as num? ?? 0).toDouble(),
-          ethereum: (simpleBalances['ethereum'] as num? ?? 0).toDouble(),
-          bnb: (simpleBalances['bnb'] as num? ?? 0).toDouble(),
-          x: (simpleBalances['x'] as num? ?? 0).toDouble(),
-          tether: tetherBalance,
-        );
-      },
-    ).handleError((error) {
+    return Rx.combineLatest2(simpleBalanceStream, tetherParcelsStream, (
+      Map<String, dynamic> simpleBalances,
+      double tetherBalance,
+    ) {
+      return CryptoBalance(
+        bitcoin: (simpleBalances['bitcoin'] as num? ?? 0).toDouble(),
+        ethereum: (simpleBalances['ethereum'] as num? ?? 0).toDouble(),
+        bnb: (simpleBalances['bnb'] as num? ?? 0).toDouble(),
+        x: (simpleBalances['x'] as num? ?? 0).toDouble(),
+        tether: tetherBalance,
+      );
+    }).handleError((error) {
       debugPrint("Error in combined balance stream: $error");
-      return const CryptoBalance(bitcoin: 0, ethereum: 0, bnb: 0, x: 0, tether: 0);
+      return const CryptoBalance(
+        bitcoin: 0,
+        ethereum: 0,
+        bnb: 0,
+        x: 0,
+        tether: 0,
+      );
     });
   }
 
@@ -78,20 +82,34 @@ class WalletRepository {
   }) async {
     final User? currentUser = _firebaseAuth.currentUser;
     if (currentUser == null) throw Exception('User not logged in.');
-    if (currentUser.email == recipientEmail) throw Exception('You cannot send crypto to yourself.');
+    if (currentUser.email == recipientEmail)
+      throw Exception('You cannot send crypto to yourself.');
     if (amountToSend <= 0) throw Exception('Amount must be positive.');
 
-    final recipientQuery = await _firestore.collection('users').where('user_email', isEqualTo: recipientEmail).limit(1).get();
-    if (recipientQuery.docs.isEmpty) throw Exception('Recipient user not found.');
+    final recipientQuery = await _firestore
+        .collection('users')
+        .where('user_email', isEqualTo: recipientEmail)
+        .limit(1)
+        .get();
+    if (recipientQuery.docs.isEmpty)
+      throw Exception('Recipient user not found.');
     final recipientId = recipientQuery.docs.first.id;
     final recipientUser = UserModel.fromJson(recipientQuery.docs.first.data());
 
     const String coinType = 'tether';
-    final senderParcelsRef = _firestore.collection('users').doc(currentUser.uid).collection('${coinType}_parcels');
-    final recipientParcelsRef = _firestore.collection('users').doc(recipientId).collection('${coinType}_parcels');
+    final senderParcelsRef = _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('${coinType}_parcels');
+    final recipientParcelsRef = _firestore
+        .collection('users')
+        .doc(recipientId)
+        .collection('${coinType}_parcels');
     final transactionLedgerRef = _firestore.collection('transactions').doc();
-    
-    final senderParcelQuery = await senderParcelsRef.orderBy('receivedAt', descending: true).get();
+
+    final senderParcelQuery = await senderParcelsRef
+        .orderBy('receivedAt', descending: true)
+        .get();
 
     final List<DocumentSnapshot> docsToSpend = [];
     double collectedAmount = 0;
@@ -115,46 +133,69 @@ class WalletRepository {
       for (var docSnapshot in docsToSpend) {
         final freshDoc = await transaction.get(docSnapshot.reference);
         if (!freshDoc.exists) {
-          throw Exception("Transaction failed. One of your coin parcels was spent. Please try again.");
+          throw Exception(
+            "Transaction failed. One of your coin parcels was spent. Please try again.",
+          );
         }
       }
-      
-      final List<ParcelModel> parcelsToSpendModels = docsToSpend.map((doc) => ParcelModel.fromFirestore(doc)).toList();
+
+      final List<ParcelModel> parcelsToSpendModels = docsToSpend
+          .map((doc) => ParcelModel.fromFirestore(doc))
+          .toList();
       final List<Map<String, dynamic>> inputsForLedger = [];
       final List<Map<String, dynamic>> outputsForLedger = [];
-      
+
       for (var parcel in parcelsToSpendModels) {
         transaction.delete(senderParcelsRef.doc(parcel.parcelId));
-        inputsForLedger.add({'ownerId': currentUser.uid, 'parcelId': parcel.parcelId, 'amount': parcel.amount});
+        inputsForLedger.add({
+          'ownerId': currentUser.uid,
+          'parcelId': parcel.parcelId,
+          'amount': parcel.amount,
+        });
       }
 
       final recipientParcelRef = recipientParcelsRef.doc();
-      transaction.set(recipientParcelRef, ParcelModel(
-        parcelId: recipientParcelRef.id,
-        amount: amountToSend,
-        receivedFromUserId: currentUser.uid,
-        originTransactionId: transactionLedgerRef.id,
-        receivedAt: Timestamp.now(),
-      ).toJson());
-      outputsForLedger.add({'recipientUserId': recipientId, 'newParcelId': recipientParcelRef.id, 'amount': amountToSend});
-      
-      final double changeAmount = collectedAmount - amountToSend;
-      if (changeAmount > 0.000001) {
-        final changeParcelRef = senderParcelsRef.doc();
-        transaction.set(changeParcelRef, ParcelModel(
-          parcelId: changeParcelRef.id,
-          amount: changeAmount,
+      transaction.set(
+        recipientParcelRef,
+        ParcelModel(
+          parcelId: recipientParcelRef.id,
+          amount: amountToSend,
           receivedFromUserId: currentUser.uid,
           originTransactionId: transactionLedgerRef.id,
           receivedAt: Timestamp.now(),
-        ).toJson());
-        outputsForLedger.add({'recipientUserId': currentUser.uid, 'newParcelId': changeParcelRef.id, 'amount': changeAmount});
+        ).toJson(),
+      );
+      outputsForLedger.add({
+        'recipientUserId': recipientId,
+        'newParcelId': recipientParcelRef.id,
+        'amount': amountToSend,
+      });
+
+      final double changeAmount = collectedAmount - amountToSend;
+      if (changeAmount > 0.000001) {
+        final changeParcelRef = senderParcelsRef.doc();
+        transaction.set(
+          changeParcelRef,
+          ParcelModel(
+            parcelId: changeParcelRef.id,
+            amount: changeAmount,
+            receivedFromUserId: currentUser.uid,
+            originTransactionId: transactionLedgerRef.id,
+            receivedAt: Timestamp.now(),
+          ).toJson(),
+        );
+        outputsForLedger.add({
+          'recipientUserId': currentUser.uid,
+          'newParcelId': changeParcelRef.id,
+          'amount': changeAmount,
+        });
       }
 
+      // --- THIS IS THE FIX ---
       final newTransactionRecord = TransactionRecordModel(
         transactionId: transactionLedgerRef.id,
         status: 'completed',
-        transactionType: 'send',
+        transactionType: 'send', // Added the missing required parameter
         timestamp: Timestamp.now(),
         coinType: coinType,
         totalAmount: amountToSend,
@@ -162,7 +203,9 @@ class WalletRepository {
         fromUserEmail: currentUser.email ?? 'N/A',
         toUserId: recipientId,
         toUserEmail: recipientUser.userEmail,
-        inputParcelIds: inputsForLedger.map((input) => input['parcelId'] as String).toList(),
+        inputParcelIds: inputsForLedger
+            .map((input) => input['parcelId'] as String)
+            .toList(),
         inputs: inputsForLedger,
         outputs: outputsForLedger,
       );
@@ -176,7 +219,10 @@ class WalletRepository {
     if (user == null) throw Exception('User not logged in.');
 
     const String coinType = 'tether';
-    final parcelsRef = _firestore.collection('users').doc(user.uid).collection('${coinType}_parcels');
+    final parcelsRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('${coinType}_parcels');
     final newParcelRef = parcelsRef.doc();
 
     final newParcel = ParcelModel(
@@ -198,30 +244,47 @@ class WalletRepository {
     final User? user = _firebaseAuth.currentUser;
     if (user == null) throw Exception('User not logged in.');
 
-    final balanceDocRef = _firestore.collection('users').doc(user.uid).collection('cryptoBalance').doc('balance');
-    final tetherParcelRef = _firestore.collection('users').doc(user.uid).collection('tether_parcels').doc();
+    final balanceDocRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('cryptoBalance')
+        .doc('balance');
+    final tetherParcelRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('tether_parcels')
+        .doc();
     final transactionLedgerRef = _firestore.collection('transactions').doc();
 
     return _firestore.runTransaction((transaction) async {
       final balanceDoc = await transaction.get(balanceDocRef);
-      if (!balanceDoc.exists || balanceDoc.data() == null) throw Exception("Balance document not found.");
+      if (!balanceDoc.exists || balanceDoc.data() == null)
+        throw Exception("Balance document not found.");
 
       final balances = CryptoBalance.fromJson(balanceDoc.data()!);
       double getBalance(String key) {
         switch (key) {
-          case 'bitcoin': return balances.bitcoin;
-          case 'ethereum': return balances.ethereum;
-          case 'bnb': return balances.bnb;
-          case 'x': return balances.x;
-          default: return 0.0;
+          case 'bitcoin':
+            return balances.bitcoin;
+          case 'ethereum':
+            return balances.ethereum;
+          case 'bnb':
+            return balances.bnb;
+          case 'x':
+            return balances.x;
+          default:
+            return 0.0;
         }
       }
-      
-      final currentFromBalance = getBalance(fromCoinKey);
-      if (currentFromBalance < fromAmount) throw Exception("Insufficient $fromCoinKey balance.");
 
-      transaction.update(balanceDocRef, {fromCoinKey: FieldValue.increment(-fromAmount)});
-      
+      final currentFromBalance = getBalance(fromCoinKey);
+      if (currentFromBalance < fromAmount)
+        throw Exception("Insufficient $fromCoinKey balance.");
+
+      transaction.update(balanceDocRef, {
+        fromCoinKey: FieldValue.increment(-fromAmount),
+      });
+
       final newParcel = ParcelModel(
         parcelId: tetherParcelRef.id,
         amount: tetherToReceive,
@@ -238,11 +301,21 @@ class WalletRepository {
         timestamp: Timestamp.now(),
         coinType: 'tether',
         totalAmount: tetherToReceive,
-        fromUserId: user.uid, fromUserEmail: user.email ?? '',
-        toUserId: user.uid, toUserEmail: user.email ?? '',
+        fromUserId: user.uid,
+        fromUserEmail: user.email ?? '',
+        toUserId: user.uid,
+        toUserEmail: user.email ?? '',
         inputParcelIds: [],
-        inputs: [{'type': 'simple_balance', 'coin': fromCoinKey, 'amount': fromAmount}],
-        outputs: [{'recipientUserId': user.uid, 'newParcelId': newParcel.parcelId, 'amount': tetherToReceive}],
+        inputs: [
+          {'type': 'simple_balance', 'coin': fromCoinKey, 'amount': fromAmount},
+        ],
+        outputs: [
+          {
+            'recipientUserId': user.uid,
+            'newParcelId': newParcel.parcelId,
+            'amount': tetherToReceive,
+          },
+        ],
       );
       transaction.set(transactionLedgerRef, newRecord.toJson());
     });
@@ -257,11 +330,20 @@ class WalletRepository {
     final User? currentUser = _firebaseAuth.currentUser;
     if (currentUser == null) throw Exception('User not logged in.');
 
-    final senderParcelsRef = _firestore.collection('users').doc(currentUser.uid).collection('tether_parcels');
-    final balanceDocRef = _firestore.collection('users').doc(currentUser.uid).collection('cryptoBalance').doc('balance');
+    final senderParcelsRef = _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('tether_parcels');
+    final balanceDocRef = _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('cryptoBalance')
+        .doc('balance');
     final transactionLedgerRef = _firestore.collection('transactions').doc();
 
-    final senderParcelQuery = await senderParcelsRef.orderBy('receivedAt', descending: true).get();
+    final senderParcelQuery = await senderParcelsRef
+        .orderBy('receivedAt', descending: true)
+        .get();
 
     final List<DocumentSnapshot> docsToSpend = [];
     double collectedAmount = 0;
@@ -269,38 +351,55 @@ class WalletRepository {
       if (collectedAmount < tetherAmountToSpend) {
         docsToSpend.add(doc);
         collectedAmount += (doc.data())['amount'];
-      } else { break; }
+      } else {
+        break;
+      }
     }
 
-    if (collectedAmount < tetherAmountToSpend) throw Exception("Insufficient Tether balance.");
+    if (collectedAmount < tetherAmountToSpend)
+      throw Exception("Insufficient Tether balance.");
 
     return _firestore.runTransaction((transaction) async {
       for (var docSnapshot in docsToSpend) {
         final freshDoc = await transaction.get(docSnapshot.reference);
-        if (!freshDoc.exists) throw Exception("Transaction failed. A parcel was spent. Please try again.");
+        if (!freshDoc.exists)
+          throw Exception(
+            "Transaction failed. A parcel was spent. Please try again.",
+          );
       }
 
-      final List<ParcelModel> parcelsToSpendModels = docsToSpend.map((doc) => ParcelModel.fromFirestore(doc)).toList();
+      final List<ParcelModel> parcelsToSpendModels = docsToSpend
+          .map((doc) => ParcelModel.fromFirestore(doc))
+          .toList();
       final List<Map<String, dynamic>> inputsForLedger = [];
-      
+
       for (var parcel in parcelsToSpendModels) {
         transaction.delete(senderParcelsRef.doc(parcel.parcelId));
-        inputsForLedger.add({'ownerId': currentUser.uid, 'parcelId': parcel.parcelId, 'amount': parcel.amount});
+        inputsForLedger.add({
+          'ownerId': currentUser.uid,
+          'parcelId': parcel.parcelId,
+          'amount': parcel.amount,
+        });
       }
 
       final double changeAmount = collectedAmount - tetherAmountToSpend;
       if (changeAmount > 0.000001) {
         final changeParcelRef = senderParcelsRef.doc();
-        transaction.set(changeParcelRef, ParcelModel(
-          parcelId: changeParcelRef.id,
-          amount: changeAmount,
-          receivedFromUserId: currentUser.uid,
-          originTransactionId: transactionLedgerRef.id,
-          receivedAt: Timestamp.now(),
-        ).toJson());
+        transaction.set(
+          changeParcelRef,
+          ParcelModel(
+            parcelId: changeParcelRef.id,
+            amount: changeAmount,
+            receivedFromUserId: currentUser.uid,
+            originTransactionId: transactionLedgerRef.id,
+            receivedAt: Timestamp.now(),
+          ).toJson(),
+        );
       }
-      
-      transaction.update(balanceDocRef, {toCoinKey: FieldValue.increment(toCoinAmountToReceive)});
+
+      transaction.update(balanceDocRef, {
+        toCoinKey: FieldValue.increment(toCoinAmountToReceive),
+      });
 
       final newRecord = TransactionRecordModel(
         transactionId: transactionLedgerRef.id,
@@ -309,46 +408,70 @@ class WalletRepository {
         timestamp: Timestamp.now(),
         coinType: toCoinKey,
         totalAmount: toCoinAmountToReceive,
-        fromUserId: currentUser.uid, fromUserEmail: currentUser.email ?? '',
-        toUserId: currentUser.uid, toUserEmail: currentUser.email ?? '',
-        inputParcelIds: inputsForLedger.map((input) => input['parcelId'] as String).toList(),
+        fromUserId: currentUser.uid,
+        fromUserEmail: currentUser.email ?? '',
+        toUserId: currentUser.uid,
+        toUserEmail: currentUser.email ?? '',
+        inputParcelIds: inputsForLedger
+            .map((input) => input['parcelId'] as String)
+            .toList(),
         inputs: inputsForLedger,
-        outputs: [{'recipientUserId': currentUser.uid, 'type': 'simple_balance', 'coin': toCoinKey, 'amount': toCoinAmountToReceive}],
+        outputs: [
+          {
+            'recipientUserId': currentUser.uid,
+            'type': 'simple_balance',
+            'coin': toCoinKey,
+            'amount': toCoinAmountToReceive,
+          },
+        ],
       );
       transaction.set(transactionLedgerRef, newRecord.toJson());
     });
   }
 
   /// Fetches all transactions for the current user (both sent and received).
-  Future<List<TransactionRecordModel>> fetchUserTransactions({int? limit}) async {
+  Future<List<TransactionRecordModel>> fetchUserTransactions({
+    int? limit,
+  }) async {
     final User? currentUser = _firebaseAuth.currentUser;
     if (currentUser == null) {
       throw Exception('User not logged in.');
     }
 
     try {
-      Query sentQueryBase = _firestore.collection('transactions').where('fromUserId', isEqualTo: currentUser.uid);
-      Query receivedQueryBase = _firestore.collection('transactions').where('toUserId', isEqualTo: currentUser.uid);
+      Query sentQueryBase = _firestore
+          .collection('transactions')
+          .where('fromUserId', isEqualTo: currentUser.uid);
+      Query receivedQueryBase = _firestore
+          .collection('transactions')
+          .where('toUserId', isEqualTo: currentUser.uid);
 
       if (limit != null) {
         sentQueryBase = sentQueryBase.limit(limit);
         receivedQueryBase = receivedQueryBase.limit(limit);
       }
 
-      final List<QuerySnapshot> results = await Future.wait([sentQueryBase.get(), receivedQueryBase.get()]);
+      final List<QuerySnapshot> results = await Future.wait([
+        sentQueryBase.get(),
+        receivedQueryBase.get(),
+      ]);
       final allDocs = [...results[0].docs, ...results[1].docs];
 
       final uniqueDocs = <String, DocumentSnapshot>{};
       for (var doc in allDocs) {
         uniqueDocs[doc.id] = doc;
       }
-      
+
       final transactions = uniqueDocs.values
-          .map((doc) => TransactionRecordModel.fromJson(doc.data() as Map<String, dynamic>))
+          .map(
+            (doc) => TransactionRecordModel.fromJson(
+              doc.data() as Map<String, dynamic>,
+            ),
+          )
           .toList();
 
       transactions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      
+
       if (limit != null && transactions.length > limit) {
         return transactions.sublist(0, limit);
       }

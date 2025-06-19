@@ -2,6 +2,7 @@ import 'package:cryptox/data/repositories/admin_repository.dart';
 import 'package:cryptox/data/repositories/allcoin_repository.dart';
 import 'package:cryptox/data/repositories/auth_repository.dart';
 import 'package:cryptox/data/repositories/coin_repository.dart';
+import 'package:cryptox/data/repositories/digital_note_repository.dart';
 import 'package:cryptox/data/repositories/news_repository.dart';
 import 'package:cryptox/data/repositories/wallet_repository.dart';
 import 'package:cryptox/logic/bloc/admin_trace/admin_trace_bloc.dart';
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         // Use RepositoryProvider(create: ...) for repositories created here.
         RepositoryProvider(create: (context) => AllCoinRepository()),
         RepositoryProvider(create: (context) => NewsRepository()),
+        RepositoryProvider(create: (context) => DigitalNoteRepository()),
       ],
       // 2. Provide all BLoCs, ensuring they use the repositories from the context.
       child: MultiBlocProvider(
@@ -61,8 +63,6 @@ class MyApp extends StatelessWidget {
               context.read<AuthRepository>(),
               FirebaseAuth.instance,
             ),
-            // The ..startSplash() is correctly handled in your SplashScreen UI,
-            // so it's best practice to remove it from here.
           ),
           BlocProvider(
             // SignupBloc needs AuthRepository.

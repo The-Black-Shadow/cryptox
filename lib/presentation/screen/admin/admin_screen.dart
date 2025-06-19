@@ -1,15 +1,71 @@
 import 'package:cryptox/data/models/transaction_record_model.dart';
 import 'package:cryptox/logic/bloc/admin_trace/admin_trace_bloc.dart';
 import 'package:cryptox/logic/bloc/profile/profile_bloc.dart';
-import 'package:cryptox/logic/bloc/wallet_balance/wallet_balance_bloc.dart';
-import 'package:cryptox/routes/route_pages.dart';
+import 'package:cryptox/presentation/screen/admin/admin_digital_notes_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-class AdminScreen extends StatelessWidget {
+class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
+
+  @override
+  State<AdminScreen> createState() => _AdminScreenState();
+}
+
+class _AdminScreenState extends State<AdminScreen> {
+  int _selectedIndex = 0;
+  final List<String> _pageTitles = ['Transaction Trace', 'Digital Notes Admin'];
+
+  static const List<Widget> _adminPages = <Widget>[
+    AdminTraceView(),
+    AdminDigitalNotesView(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // The global listener for logout is now in main.dart, so we don't need it here.
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_pageTitles[_selectedIndex]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // The global listener in main.dart will handle the navigation and state reset.
+              context.read<ProfileBloc>().add(LogoutEvent());
+            },
+          ),
+        ],
+      ),
+      body: IndexedStack(index: _selectedIndex, children: _adminPages),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_edu),
+            label: 'Trace',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.note_alt_outlined),
+            label: 'Digital Notes',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+// --- VIEW FOR THE TRANSACTION TRACING TAB ---
+class AdminTraceView extends StatelessWidget {
+  const AdminTraceView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,92 +73,78 @@ class AdminScreen extends StatelessWidget {
       create: (context) =>
           AdminTraceBloc(adminRepository: RepositoryProvider.of(context))
             ..add(LoadRecentTransactions()),
-      child: BlocListener<ProfileBloc, ProfileState>(
-        listener: (context, state) {
-          if (state is LogoutSuccess) {
-            // Reset BLoCs on logout
-            context.read<WalletBalanceBloc>().add(ResetWalletBalance());
-            // Add other resets if needed, e.g., for SendCryptoBloc
-            context.goNamed(Routes.WELCOME_ROUTE);
-          }
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Admin Dashboard'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () {
-                  context.read<ProfileBloc>().add(LogoutEvent());
-                },
-              ),
-            ],
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: TransactionSearchBox(),
           ),
-          body: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: TransactionSearchBox(),
-              ),
-              Expanded(
-                child: BlocBuilder<AdminTraceBloc, AdminTraceState>(
-                  builder: (context, state) {
-                    if (state is AdminTraceLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (state is AdminTraceLoaded) {
-                      if (state.transactions.isEmpty) {
-                        return const Center(
-                          child: Text("No transactions found."),
-                        );
-                      }
-                      return RefreshIndicator(
-                        onRefresh: () async {
-                          context.read<AdminTraceBloc>().add(
+          Expanded(
+            child: BlocBuilder<AdminTraceBloc, AdminTraceState>(
+              builder: (context, state) {
+                if (state is AdminTraceLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is AdminTraceLoaded) {
+                  if (state.transactions.isEmpty) {
+                    return const Center(child: Text("No transactions found."));
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<AdminTraceBloc>().add(
+                        LoadRecentTransactions(),
+                      );
+                    },
+                    child: ListView.builder(
+                      itemCount: state.transactions.length,
+                      itemBuilder: (context, index) {
+                        final transaction = state.transactions[index];
+                        return TransactionCard(transaction: transaction);
+                      },
+                    ),
+                  );
+                }
+                if (state is AdminTraceError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Text(
+                            state.message,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: () => context.read<AdminTraceBloc>().add(
                             LoadRecentTransactions(),
-                          );
-                        },
-                        child: ListView.builder(
-                          itemCount: state.transactions.length,
-                          itemBuilder: (context, index) {
-                            final transaction = state.transactions[index];
-                            return TransactionCard(transaction: transaction);
-                          },
+                          ),
+                          child: const Text("Show Recent Transactions"),
                         ),
-                      );
-                    }
-                    if (state is AdminTraceError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text("Error: ${state.message}"),
-                            const SizedBox(height: 10),
-                            ElevatedButton(
-                              onPressed: () => context
-                                  .read<AdminTraceBloc>()
-                                  .add(LoadRecentTransactions()),
-                              child: const Text("Show Recent Transactions"),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return const Center(
-                      child: Text(
-                        "Search for a transaction ID or pull to refresh.",
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                      ],
+                    ),
+                  );
+                }
+                return const Center(
+                  child: Text(
+                    "Search for a transaction ID or pull to refresh.",
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
+
+// --- PLACEHOLDER VIEW FOR THE NEW DIGITAL NOTES TAB ---
+
+
+// --- HELPER WIDGETS FOR THE TRACE VIEW ---
 
 class TransactionSearchBox extends StatefulWidget {
   const TransactionSearchBox({super.key});
@@ -130,15 +172,23 @@ class _TransactionSearchBoxState extends State<TransactionSearchBox> {
         suffixIcon: IconButton(
           icon: const Icon(Icons.search),
           onPressed: () {
-            context.read<AdminTraceBloc>().add(
-              TraceTransactionRequested(_controller.text),
-            );
+            if (_controller.text.trim().isNotEmpty) {
+              context.read<AdminTraceBloc>().add(
+                TraceTransactionRequested(_controller.text),
+              );
+            } else {
+              context.read<AdminTraceBloc>().add(LoadRecentTransactions());
+            }
             FocusScope.of(context).unfocus();
           },
         ),
       ),
       onSubmitted: (value) {
-        context.read<AdminTraceBloc>().add(TraceTransactionRequested(value));
+        if (value.trim().isNotEmpty) {
+          context.read<AdminTraceBloc>().add(TraceTransactionRequested(value));
+        } else {
+          context.read<AdminTraceBloc>().add(LoadRecentTransactions());
+        }
       },
     );
   }
@@ -151,7 +201,7 @@ class TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final date = transaction.timestamp.toDate();
-    final formattedDate = DateFormat('MMM dd, hh:mm a').format(date);
+    final formattedDate = DateFormat('MMM dd, yyyy – hh:mm a').format(date);
 
     final String amountString;
     if (transaction.coinType.toLowerCase() == 'tether') {
@@ -190,9 +240,7 @@ class TransactionCard extends StatelessWidget {
                   "Inputs (Funds Consumed):",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                // --- CORRECTED LOGIC FOR INPUTS ---
                 ...transaction.inputs.map((input) {
-                  // Check if the input is a parcel or a simple balance
                   if (input.containsKey('parcelId')) {
                     final amount = (input['amount'] as num? ?? 0)
                         .toStringAsFixed(2);
@@ -216,9 +264,7 @@ class TransactionCard extends StatelessWidget {
                   "Outputs (Funds Created):",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                // --- CORRECTED LOGIC FOR OUTPUTS ---
                 ...transaction.outputs.map((output) {
-                  // Check if the output is a parcel or a simple balance
                   if (output.containsKey('newParcelId')) {
                     final bool isChange =
                         output['recipientUserId'] == transaction.fromUserId;
@@ -268,8 +314,7 @@ class TransactionCard extends StatelessWidget {
                         .toStringAsFixed(10);
                     final coin = (output['coin'] as String? ?? 'N/A')
                         .toUpperCase();
-                    final recipientEmail = transaction
-                        .toUserEmail; // The user converting receives the balance
+                    final recipientEmail = transaction.toUserEmail;
                     return SelectableText(
                       "  - $amount $coin credited to $recipientEmail",
                       style: const TextStyle(fontSize: 12),

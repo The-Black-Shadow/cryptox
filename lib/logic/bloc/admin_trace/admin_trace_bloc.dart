@@ -7,16 +7,17 @@ import 'package:equatable/equatable.dart';
 part 'admin_trace_event.dart';
 part 'admin_trace_state.dart';
 
-
-
 class AdminTraceBloc extends Bloc<AdminTraceEvent, AdminTraceState> {
   final AdminRepository _adminRepository;
 
   AdminTraceBloc({required AdminRepository adminRepository})
-      : _adminRepository = adminRepository,
-        super(AdminTraceInitial()) {
+    : _adminRepository = adminRepository,
+      super(AdminTraceInitial()) {
     on<LoadRecentTransactions>(_onLoadRecentTransactions);
-    on<TraceTransactionRequested>(_onTraceTransactionRequested, transformer: restartable());
+    on<TraceTransactionRequested>(
+      _onTraceTransactionRequested,
+      transformer: restartable(),
+    );
     on<TraceParcelForward>(_onTraceParcelForward);
   }
 
@@ -29,7 +30,6 @@ class AdminTraceBloc extends Bloc<AdminTraceEvent, AdminTraceState> {
       final transactions = await _adminRepository.fetchRecentTransactions();
       emit(AdminTraceLoaded(transactions));
     } catch (e) {
-      // Pass the specific error message to the state
       emit(AdminTraceError(e.toString().replaceFirst("Exception: ", "")));
     }
   }
@@ -44,14 +44,15 @@ class AdminTraceBloc extends Bloc<AdminTraceEvent, AdminTraceState> {
     }
     emit(AdminTraceLoading());
     try {
-      final transaction = await _adminRepository.traceTransactionById(event.transactionId);
+      final transaction = await _adminRepository.traceTransactionById(
+        event.transactionId,
+      );
       if (transaction != null) {
         emit(AdminTraceLoaded([transaction]));
       } else {
         emit(const AdminTraceError("Transaction ID not found."));
       }
     } catch (e) {
-      // Pass the specific error message to the state
       emit(AdminTraceError(e.toString().replaceFirst("Exception: ", "")));
     }
   }
@@ -62,14 +63,18 @@ class AdminTraceBloc extends Bloc<AdminTraceEvent, AdminTraceState> {
   ) async {
     emit(AdminTraceLoading());
     try {
-      final nextTransaction = await _adminRepository.findTransactionByInputParcel(event.parcelId);
+      final nextTransaction = await _adminRepository
+          .findTransactionByInputParcel(event.parcelId);
       if (nextTransaction != null) {
         emit(AdminTraceLoaded([nextTransaction]));
       } else {
-        emit(const AdminTraceError("This parcel has not been spent yet. The trace ends here."));
+        emit(
+          const AdminTraceError(
+            "This parcel has not been spent yet. The trace ends here.",
+          ),
+        );
       }
     } catch (e) {
-      // Pass the specific error message to the state
       emit(AdminTraceError(e.toString().replaceFirst("Exception: ", "")));
     }
   }

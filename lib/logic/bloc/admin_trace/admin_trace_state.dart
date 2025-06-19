@@ -8,6 +8,7 @@ sealed class AdminTraceState extends Equatable {
 }
 
 final class AdminTraceInitial extends AdminTraceState {}
+
 final class AdminTraceLoading extends AdminTraceState {}
 
 /// State representing a list of transactions (either recent or search results).

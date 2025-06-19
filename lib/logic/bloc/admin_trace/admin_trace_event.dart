@@ -21,4 +21,3 @@ class TraceParcelForward extends AdminTraceEvent {
   @override
   List<Object> get props => [parcelId];
 }
-
