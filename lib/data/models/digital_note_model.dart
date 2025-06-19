@@ -33,8 +33,6 @@ class DigitalNoteModel extends Equatable {
     );
   }
 
-  // --- ADDED THIS METHOD ---
-  // This method converts the Dart object into a Map that can be saved to Firestore.
   Map<String, dynamic> toJson() {
     return {
       'serialNumber': serialNumber,
@@ -46,13 +44,28 @@ class DigitalNoteModel extends Equatable {
     };
   }
 
-  // Helper to get the email of the user who last sent this note
+  // --- THIS IS THE CORRECTED LOGIC ---
+  /// Helper to get the email of the user who last sent this note.
   String get receivedFromEmail {
-    if (history.isEmpty) return 'System Deposit';
-    if (originatorInfo['adminEmail'] != null) {
+    if (history.isEmpty) {
+      return 'System'; // Should not happen with new logic, but a safe fallback.
+    }
+
+    // Get the most recent event from the note's history.
+    final lastEvent = history.last;
+    final fromUserId = lastEvent['fromUserId'];
+
+    // Check for special cases first.
+    if (fromUserId == 'deposit_system') {
       return 'Admin Deposit';
     }
-    return history.last['fromUserEmail'] ?? 'Unknown Sender';
+    // If the note was sent from the owner to themselves, it's "change".
+    if (fromUserId == ownerUserId) {
+      return 'Change from transaction';
+    }
+
+    // Otherwise, return the email of the sender from the last transaction.
+    return lastEvent['fromUserEmail'] ?? 'Unknown User';
   }
 
   @override

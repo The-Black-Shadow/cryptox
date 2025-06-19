@@ -9,6 +9,7 @@ import 'package:cryptox/logic/bloc/admin_trace/admin_trace_bloc.dart';
 import 'package:cryptox/logic/bloc/all_coin/all_coin_bloc.dart';
 import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
 import 'package:cryptox/logic/bloc/crypto_convert/crypto_convert_bloc.dart';
+import 'package:cryptox/logic/bloc/digital_note/digital_note_bloc.dart';
 import 'package:cryptox/logic/bloc/send_crypto/send_crypto_bloc.dart'; // Corrected import
 import 'package:cryptox/logic/bloc/news/news_bloc.dart';
 import 'package:cryptox/logic/bloc/payment/payment_bloc.dart';
@@ -54,10 +55,15 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => AllCoinRepository()),
         RepositoryProvider(create: (context) => NewsRepository()),
         RepositoryProvider(create: (context) => DigitalNoteRepository()),
+        RepositoryProvider(create: (context) => DigitalNoteRepository()),
       ],
       // 2. Provide all BLoCs, ensuring they use the repositories from the context.
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(
+            create: (context) =>
+                DigitalNoteBloc(digitalNoteRepository: DigitalNoteRepository()),
+          ),
           BlocProvider(
             create: (context) => SplashCubit(
               context.read<AuthRepository>(),
