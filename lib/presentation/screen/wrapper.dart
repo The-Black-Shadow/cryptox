@@ -7,11 +7,14 @@ class Wrapper extends StatelessWidget {
   const Wrapper({super.key, required this.child});
 
   int _calculateSelectedIndex(BuildContext context) {
-    final uri = GoRouter.of(context).routeInformationProvider.value.uri.toString();
+    final uri = GoRouter.of(
+      context,
+    ).routeInformationProvider.value.uri.toString();
 
     if (uri.startsWith(Routes.HOME_ROUTE)) return 0;
     if (uri.startsWith(Routes.WALLET_ROUTE)) return 1;
-    if (uri.startsWith(Routes.PROFILE_ROUTE)) return 2;
+    if (uri.startsWith(Routes.DIGITAL_NOTE_ROUTE)) return 2;
+    if (uri.startsWith(Routes.PROFILE_ROUTE)) return 3;
     return 0;
   }
 
@@ -24,6 +27,9 @@ class Wrapper extends StatelessWidget {
         context.go(Routes.WALLET_ROUTE);
         break;
       case 2:
+        context.go(Routes.DIGITAL_NOTE_ROUTE);
+        break;
+      case 3:
         context.go(Routes.PROFILE_ROUTE);
         break;
     }
@@ -38,10 +44,27 @@ class Wrapper extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex,
         onTap: (index) => _onItemTapped(context, index),
+        backgroundColor: const Color.fromARGB(255, 67, 66, 66),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: const Color.fromARGB(255, 241, 27, 27),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'Wallet'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(
+            backgroundColor: Colors.black,
+            icon: Icon(Icons.home, color: Colors.white),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance_wallet, color: Colors.white),
+            label: 'Crypto Wallet',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.note, color: Colors.white),
+            label: 'Digital Notes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person, color: Colors.white),
+            label: 'Profile',
+          ),
         ],
       ),
     );

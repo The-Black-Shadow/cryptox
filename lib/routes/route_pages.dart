@@ -5,6 +5,7 @@ import 'package:cryptox/presentation/screen/admin/admin_screen.dart';
 import 'package:cryptox/presentation/screen/all_coin/allcoin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signup_screen.dart';
+import 'package:cryptox/presentation/screen/digital_notes/digital_note_screen.dart';
 import 'package:cryptox/presentation/screen/home/home_screen.dart';
 import 'package:cryptox/presentation/screen/news_screen.dart/all_news_screen.dart';
 import 'package:cryptox/presentation/screen/news_screen.dart/news_detail_screen.dart';
@@ -120,6 +121,12 @@ class RoutePages {
             name: Routes.WALLET_ROUTE,
             pageBuilder: (context, state) =>
                 const MaterialPage(child: WalletScreen()),
+          ),
+          GoRoute(
+            path: Routes.DIGITAL_NOTE_ROUTE,
+            name: Routes.DIGITAL_NOTE_ROUTE,
+            pageBuilder: (context, state) =>
+                const MaterialPage(child: DigitalNoteScreen()),
           ),
           GoRoute(
             path: Routes.PROFILE_ROUTE,

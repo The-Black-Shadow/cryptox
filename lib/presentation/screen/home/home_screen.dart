@@ -3,7 +3,6 @@ import 'package:cryptox/logic/bloc/coin/coin_bloc.dart';
 import 'package:cryptox/logic/bloc/news/news_bloc.dart';
 import 'package:cryptox/data/repositories/news_repository.dart'; //; // Corrected path
 import 'package:cryptox/presentation/screen/news_screen.dart/all_news_screen.dart';
-// (Ensure the path to AllNewsView is correct, you might need to adjust the import if AllNewsView is in all_news_screen.dart)
 
 import 'package:cryptox/routes/route_pages.dart';
 import 'package:flutter/material.dart';

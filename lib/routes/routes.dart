@@ -10,6 +10,7 @@ class Routes {
   static const String SIGNIN_ROUTE = '/signin';
   static const String SIGNUP_ROUTE = '/signup';
   static const String WALLET_ROUTE = '/wallet';
+  static const String DIGITAL_NOTE_ROUTE = '/digital_note';
   static const String PROFILE_ROUTE = '/profile';
   static const String ALL_COIN_ROUTE = '/all_coin';
   static const String ALL_NEWS_ROUTE = '/all_news';
