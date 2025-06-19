@@ -19,6 +19,7 @@ class AdminTraceBloc extends Bloc<AdminTraceEvent, AdminTraceState> {
       transformer: restartable(),
     );
     on<TraceParcelForward>(_onTraceParcelForward);
+    on<BlockTransactionRequested>(_onBlockTransactionRequested);
   }
 
   Future<void> _onLoadRecentTransactions(
@@ -76,6 +77,35 @@ class AdminTraceBloc extends Bloc<AdminTraceEvent, AdminTraceState> {
       }
     } catch (e) {
       emit(AdminTraceError(e.toString().replaceFirst("Exception: ", "")));
+    }
+  }
+
+  Future<void> _onBlockTransactionRequested(
+    BlockTransactionRequested event,
+    Emitter<AdminTraceState> emit,
+  ) async {
+    final currentState = state;
+    // Emit a generic loading state while blocking
+    emit(AdminTraceLoading());
+    try {
+      final notesBlockedCount = await _adminRepository.blockNotesByTransaction(
+        event.transactionId,
+      );
+      emit(
+        TransactionBlockedSuccess(
+          "$notesBlockedCount note(s) associated with this transaction have been blocked.",
+        ),
+      );
+
+      // After blocking, refresh the view to show the results of the block.
+      // This will either show the same transaction again or show recent ones.
+      add(TraceTransactionRequested(event.transactionId));
+    } catch (e) {
+      emit(AdminTraceError(e.toString().replaceFirst("Exception: ", "")));
+      // On failure, return to the last known loaded state to avoid being stuck on an error screen
+      if (currentState is AdminTraceLoaded) {
+        emit(currentState);
+      }
     }
   }
 }

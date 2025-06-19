@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptox/data/models/digital_note_model.dart';
 import 'package:cryptox/data/models/transaction_record_model.dart';
 import 'package:cryptox/data/models/user_model.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class AdminRepository {
   final FirebaseFirestore _firestore;
@@ -24,7 +24,7 @@ class AdminRepository {
           .map((doc) => TransactionRecordModel.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print("Error fetching recent transactions: $e");
+      debugPrint("Error fetching recent transactions: $e");
       throw Exception("Could not load recent transactions.");
     }
   }
@@ -63,12 +63,12 @@ class AdminRepository {
       }
       return null;
     } catch (e) {
-      print("Error finding transaction by input parcel: $e");
+      debugPrint("Error finding transaction by input parcel: $e");
       throw Exception("Could not trace parcel forward.");
     }
   }
-  /// Finds a user by their email to get their ID and profile.
-  Future<UserModel?> findUserByEmail(String email) async {
+
+  Future<Map<String, dynamic>?> findUserByEmail(String email) async {
     try {
       final query = await _firestore
           .collection('users')
@@ -77,8 +77,9 @@ class AdminRepository {
           .get();
 
       if (query.docs.isNotEmpty) {
-        final user = UserModel.fromJson(query.docs.first.data());
-        return user;
+        final doc = query.docs.first;
+        final user = UserModel.fromJson(doc.data());
+        return {'id': doc.id, 'user': user};
       }
       return null;
     } catch (e) {
@@ -87,24 +88,40 @@ class AdminRepository {
     }
   }
 
-  /// Fetches all active digital notes for a specific user ID.
+  /// Fetches all active and blocked digital notes for a specific user ID.
   Future<List<DigitalNoteModel>> fetchUserDigitalNotes(String userId) async {
     try {
+      // --- THIS IS THE FIX ---
+      // Removed the `.where('status', isEqualTo: 'active')` filter.
+      // The query now fetches all notes for the user, regardless of status.
       final querySnapshot = await _firestore
           .collection('digital_notes')
           .where('ownerUserId', isEqualTo: userId)
-          .where('status', isEqualTo: 'active')
           .orderBy('denomination', descending: true)
           .get();
-      
-      return querySnapshot.docs.map((doc) => DigitalNoteModel.fromFirestore(doc)).toList();
+
+      return querySnapshot.docs
+          .map((doc) => DigitalNoteModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
       debugPrint("Error fetching user's digital notes: $e");
       throw Exception("Could not load user's notes.");
     }
   }
-  
-  /// Creates new digital notes for a user based on a deposit amount.
+
+  Future<void> updateNoteStatus(String noteId, String newStatus) async {
+    if (noteId.isEmpty || (newStatus != 'active' && newStatus != 'blocked')) {
+      throw Exception("Invalid input for updating note status.");
+    }
+    try {
+      await _firestore.collection('digital_notes').doc(noteId).update({
+        'status': newStatus,
+      });
+    } catch (e) {
+      throw Exception("Failed to update note status.");
+    }
+  }
+
   Future<void> depositDigitalNotes({
     required String userId,
     required double totalAmount,
@@ -114,7 +131,8 @@ class AdminRepository {
     if (totalAmount <= 0) throw Exception("Deposit amount must be positive.");
 
     final notesToCreate = _calculateNoteDistribution(totalAmount);
-    if (notesToCreate.isEmpty) throw Exception("Cannot create notes for this amount.");
+    if (notesToCreate.isEmpty)
+      throw Exception("Cannot create notes for this amount.");
 
     final WriteBatch batch = _firestore.batch();
     final depositTransactionId = 'DEP_${DateTime.now().millisecondsSinceEpoch}';
@@ -122,12 +140,10 @@ class AdminRepository {
     for (var note in notesToCreate) {
       final noteRef = _firestore.collection('digital_notes').doc();
       final serialNumber = 'HC ${noteRef.id}'.toUpperCase();
-      
+
       final newNote = DigitalNoteModel(
         noteId: noteRef.id,
         serialNumber: serialNumber,
-        // --- THIS IS THE FIX for Error 1 ---
-        // Asserting that 'denomination' is not null, as our logic guarantees it.
         denomination: note['denomination']!,
         ownerUserId: userId,
         status: 'active',
@@ -143,22 +159,88 @@ class AdminRepository {
             'toUserId': userId,
             'timestamp': Timestamp.now(),
             'transactionId': depositTransactionId,
-          }
+          },
         ],
       );
-      // --- THIS IS THE FIX for Error 2 ---
-      // This call now works because we added the toJson() method.
       batch.set(noteRef, newNote.toJson());
     }
 
     await batch.commit();
   }
 
-  /// Helper method to calculate note distribution using a greedy algorithm.
+  Future<int> blockNotesByTransaction(String transactionId) async {
+    if (transactionId.trim().isEmpty) {
+      throw Exception("Transaction ID cannot be empty.");
+    }
+
+    final notesCollection = _firestore.collection('digital_notes');
+
+    // First, find the transaction record to get the list of created notes.
+    final txDoc = await _firestore
+        .collection('digital_note_transactions')
+        .doc(transactionId)
+        .get();
+
+    List<String> createdNoteSerials = [];
+    if (txDoc.exists && txDoc.data()!.containsKey('createdNoteIds')) {
+      createdNoteSerials = List<String>.from(
+        txDoc.data()!['createdNoteIds'] ?? [],
+      );
+    } else {
+      // Fallback for deposit transactions which might not have a separate ledger entry
+      final depositQuery = await notesCollection
+          .where(
+            'originatorInfo.depositTransactionId',
+            isEqualTo: transactionId,
+          )
+          .get();
+
+      if (depositQuery.docs.isEmpty)
+        throw Exception("No notes found for this transaction ID.");
+
+      final WriteBatch batch = _firestore.batch();
+      for (var doc in depositQuery.docs) {
+        batch.update(doc.reference, {'status': 'blocked'});
+      }
+      await batch.commit();
+      return depositQuery.docs.length;
+    }
+
+    if (createdNoteSerials.isEmpty) {
+      return 0; // No notes were created by this transaction to block.
+    }
+
+    // Now, find all notes that have these serial numbers.
+    // Firestore 'whereIn' queries are limited to 30 items. For more, you'd need multiple queries.
+    final notesToBlockSnapshot = await notesCollection
+        .where('serialNumber', whereIn: createdNoteSerials)
+        .get();
+
+    if (notesToBlockSnapshot.docs.isEmpty) return 0;
+
+    final WriteBatch batch = _firestore.batch();
+    for (var doc in notesToBlockSnapshot.docs) {
+      batch.update(doc.reference, {'status': 'blocked'});
+    }
+    await batch.commit();
+    return notesToBlockSnapshot.docs.length;
+  }
+
   List<Map<String, double>> _calculateNoteDistribution(double amount) {
-    final List<double> denominations = [1000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
+    final List<double> denominations = [
+      1000,
+      500,
+      200,
+      100,
+      50,
+      20,
+      10,
+      5,
+      2,
+      1,
+    ];
     final List<Map<String, double>> notes = [];
-    double remainingAmount = amount;
+    double remainingAmount = amount.floorToDouble();
 
     for (var den in denominations) {
       if (remainingAmount >= den) {
@@ -172,4 +254,3 @@ class AdminRepository {
     return notes;
   }
 }
-

@@ -12,7 +12,7 @@ class TransactionRecordModel extends Equatable {
   final String fromUserEmail;
   final String toUserId;
   final String toUserEmail;
-  final List<String> inputParcelIds; // For efficient querying
+  final List<String> inputParcelIds;
   final List<Map<String, dynamic>> inputs;
   final List<Map<String, dynamic>> outputs;
 

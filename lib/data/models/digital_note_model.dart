@@ -44,28 +44,23 @@ class DigitalNoteModel extends Equatable {
     };
   }
 
-  // --- THIS IS THE CORRECTED LOGIC ---
-  /// Helper to get the email of the user who last sent this note.
+  /// Correctly determines the last sender of the note.
   String get receivedFromEmail {
     if (history.isEmpty) {
-      return 'System'; // Should not happen with new logic, but a safe fallback.
+      return 'System Origin';
     }
 
-    // Get the most recent event from the note's history.
     final lastEvent = history.last;
     final fromUserId = lastEvent['fromUserId'];
 
-    // Check for special cases first.
     if (fromUserId == 'deposit_system') {
-      return 'Admin Deposit';
+      return originatorInfo['adminEmail'] as String? ?? 'Admin Deposit';
     }
-    // If the note was sent from the owner to themselves, it's "change".
     if (fromUserId == ownerUserId) {
-      return 'Change from transaction';
+      return 'Change from a previous transaction';
     }
 
-    // Otherwise, return the email of the sender from the last transaction.
-    return lastEvent['fromUserEmail'] ?? 'Unknown User';
+    return lastEvent['fromUserEmail'] as String? ?? 'An Anonymous User';
   }
 
   @override

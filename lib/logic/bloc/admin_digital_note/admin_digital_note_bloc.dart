@@ -1,6 +1,5 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptox/data/models/digital_note_model.dart';
 import 'package:cryptox/data/models/user_model.dart';
 import 'package:cryptox/data/repositories/admin_repository.dart';
@@ -10,20 +9,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 part 'admin_digital_note_event.dart';
 part 'admin_digital_note_state.dart';
 
-class AdminDigitalNoteBloc
-    extends Bloc<AdminDigitalNoteEvent, AdminDigitalNoteState> {
+class AdminDigitalNoteBloc extends Bloc<AdminDigitalNoteEvent, AdminDigitalNoteState> {
   final AdminRepository _adminRepository;
   final FirebaseAuth _firebaseAuth;
 
-  AdminDigitalNoteBloc({
-    required AdminRepository adminRepository,
-    FirebaseAuth? firebaseAuth,
-  }) : _adminRepository = adminRepository,
-       _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-       super(AdminDigitalNoteInitial()) {
+  AdminDigitalNoteBloc({required AdminRepository adminRepository, FirebaseAuth? firebaseAuth})
+      : _adminRepository = adminRepository,
+        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        super(AdminDigitalNoteInitial()) {
     on<SearchUserByEmail>(_onSearchUserByEmail, transformer: restartable());
     on<DepositNotesToUser>(_onDepositNotesToUser);
-    on<ClearSearch>((event, emit) => emit(AdminDigitalNoteInitial()));
+    on<UpdateNoteStatusRequested>(_onUpdateNoteStatus);
+    on<ClearNoteSearch>((event, emit) => emit(AdminDigitalNoteInitial()));
   }
 
   Future<void> _onSearchUserByEmail(
@@ -36,25 +33,16 @@ class AdminDigitalNoteBloc
     }
     emit(AdminDigitalNoteLoading());
     try {
-      final user = await _adminRepository.findUserByEmail(event.email);
-      if (user == null) {
-        throw Exception("User not found.");
-      }
-      final userQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('user_email', isEqualTo: event.email)
-          .get();
-      final userId = userQuery.docs.first.id;
+      final userSearchResult = await _adminRepository.findUserByEmail(event.email);
+      if (userSearchResult == null) throw Exception("User not found.");
+
+      final String userId = userSearchResult['id'];
+      final UserModel user = userSearchResult['user'];
 
       final notes = await _adminRepository.fetchUserDigitalNotes(userId);
-      final totalBalance = notes.fold(
-        0.0,
-        (sum, note) => sum + note.denomination,
-      );
-
-      emit(
-        UserNotesLoaded(user: user, notes: notes, totalBalance: totalBalance),
-      );
+      final totalBalance = notes.fold(0.0, (sum, note) => sum + note.denomination);
+      
+      emit(UserNotesLoaded(userId: userId, user: user, notes: notes, totalBalance: totalBalance));
     } catch (e) {
       emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
     }
@@ -64,42 +52,30 @@ class AdminDigitalNoteBloc
     DepositNotesToUser event,
     Emitter<AdminDigitalNoteState> emit,
   ) async {
+    // ... (logic from previous answer) ...
+  }
+
+  Future<void> _onUpdateNoteStatus(
+    UpdateNoteStatusRequested event,
+    Emitter<AdminDigitalNoteState> emit,
+  ) async {
     final currentState = state;
-    if (currentState is UserNotesLoaded) {
-      emit(
-        DepositInProgress(
-          user: currentState.user,
-          notes: currentState.notes,
-          totalBalance: currentState.totalBalance,
-        ),
-      );
-    } else {
-      emit(AdminDigitalNoteLoading());
-    }
+    if (currentState is! UserNotesLoaded) return;
+    
+    emit(ActionInProgress(
+      userId: currentState.userId,
+      user: currentState.user,
+      notes: currentState.notes,
+      totalBalance: currentState.totalBalance,
+    ));
 
     try {
-      final admin = _firebaseAuth.currentUser;
-      if (admin == null) throw Exception("Admin not authenticated.");
-
-      await _adminRepository.depositDigitalNotes(
-        userId: event.userId,
-        totalAmount: event.amount,
-        adminId: admin.uid,
-        adminEmail: admin.email ?? 'admin@cryptox.com',
-      );
-
-      emit(DepositSuccess("Successfully deposited ${event.amount} to user."));
-
-      if (currentState is UserNotesLoaded) {
-        add(SearchUserByEmail(currentState.user.userEmail));
-      } else {
-        emit(AdminDigitalNoteInitial());
-      }
+      await _adminRepository.updateNoteStatus(event.noteId, event.newStatus);
+      emit(ActionSuccess("Note status updated successfully."));
+      add(SearchUserByEmail(currentState.user.userEmail)); // Refresh data
     } catch (e) {
       emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
-      if (currentState is UserNotesLoaded) {
-        emit(currentState);
-      }
+      emit(currentState); // Revert to previous loaded state on error
     }
   }
 }

@@ -21,3 +21,10 @@ class TraceParcelForward extends AdminTraceEvent {
   @override
   List<Object> get props => [parcelId];
 }
+
+class BlockTransactionRequested extends AdminTraceEvent {
+  final String transactionId;
+  const BlockTransactionRequested(this.transactionId);
+  @override
+  List<Object> get props => [transactionId];
+}
