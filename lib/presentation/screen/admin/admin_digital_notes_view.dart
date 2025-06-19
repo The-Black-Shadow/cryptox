@@ -20,14 +20,14 @@ class AdminDigitalNotesView extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.green.shade600,
               ),
             );
           } else if (state is AdminDigitalNoteError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.red.shade600,
               ),
             );
           }
@@ -55,6 +55,7 @@ class AdminDigitalNotesView extends StatelessWidget {
               if (state is UserNotesLoaded)
                 Expanded(
                   child: UserNotesProfile(
+                    key: ValueKey(state.userId),
                     userId: state.userId,
                     user: state.user,
                     notes: state.notes,
@@ -80,12 +81,6 @@ class _UserSearchBoxState extends State<UserSearchBox> {
   final _controller = TextEditingController();
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Row(
       children: [
@@ -95,6 +90,7 @@ class _UserSearchBoxState extends State<UserSearchBox> {
             decoration: const InputDecoration(
               labelText: 'Search User by Email',
               border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
             ),
             keyboardType: TextInputType.emailAddress,
             onSubmitted: (value) {
@@ -148,55 +144,13 @@ class UserNotesProfile extends StatelessWidget {
   });
 
   void _showDepositDialog(BuildContext context) {
-    final amountController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
     showDialog(
       context: context,
       barrierDismissible: !isProcessingAction,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text('Deposit to ${user.userName}'),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: amountController,
-              decoration: const InputDecoration(
-                labelText: 'Amount to Deposit',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: false,
-              ),
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (value) {
-                if (value == null ||
-                    value.isEmpty ||
-                    (int.tryParse(value) ?? 0) <= 0) {
-                  return 'Please enter a valid positive amount';
-                }
-                return null;
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final amount = double.parse(amountController.text);
-                  BlocProvider.of<AdminDigitalNoteBloc>(
-                    context,
-                  ).add(DepositNotesToUser(userId: userId, amount: amount));
-                  Navigator.of(dialogContext).pop();
-                }
-              },
-              child: const Text('Confirm Deposit'),
-            ),
-          ],
+        return BlocProvider.value(
+          value: BlocProvider.of<AdminDigitalNoteBloc>(context),
+          child: _DepositDialog(userId: userId, userName: user.userName),
         );
       },
     );
@@ -224,7 +178,11 @@ class UserNotesProfile extends StatelessWidget {
           ),
           subtitle: Text(user.userEmail),
           trailing: isProcessingAction
-              ? const CircularProgressIndicator()
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(),
+                )
               : ElevatedButton.icon(
                   icon: const Icon(Icons.add),
                   label: const Text('Deposit'),
@@ -241,7 +199,9 @@ class UserNotesProfile extends StatelessWidget {
         const Divider(),
         Expanded(
           child: notes.isEmpty
-              ? const Center(child: Text('This user has no digital notes.'))
+              ? const Center(
+                  child: Text('This user has no active digital notes.'),
+                )
               : ListView.builder(
                   itemCount: notes.length,
                   itemBuilder: (context, index) {
@@ -273,9 +233,9 @@ class AdminNoteCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      color: cardColor, // Visually distinguish blocked notes
+      color: cardColor,
       child: Opacity(
-        opacity: isActive ? 1.0 : 0.6, // Make blocked notes less prominent
+        opacity: isActive ? 1.0 : 0.6,
         child: ListTile(
           title: Text(
             formattedDenomination,
@@ -335,17 +295,109 @@ class AdminNoteCard extends StatelessWidget {
                       value: 'activate',
                       child: Text('Activate Note'),
                     ),
-                  const PopupMenuItem<String>(
-                    value: 'history',
-                    child: Text(
-                      'View History',
-                    ), // Placeholder for future feature
-                  ),
+                  // const PopupMenuItem<String>(
+                  //   value: 'history',
+                  //   child: Text('View History'),
+                  // ),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DepositDialog extends StatefulWidget {
+  final String userId;
+  final String userName;
+
+  const _DepositDialog({required this.userId, required this.userName});
+
+  @override
+  State<_DepositDialog> createState() => _DepositDialogState();
+}
+
+class _DepositDialogState extends State<_DepositDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  void _onConfirmDeposit() {
+    if (_formKey.currentState!.validate()) {
+      final amount = double.parse(_amountController.text);
+      context.read<AdminDigitalNoteBloc>().add(
+        DepositNotesToUser(userId: widget.userId, amount: amount),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AdminDigitalNoteBloc, AdminDigitalNoteState>(
+      listener: (context, state) {
+        if (state is ActionSuccess) {
+          // Close the dialog ONLY on success.
+          Navigator.of(context).pop();
+        } else if (state is AdminDigitalNoteError) {
+          // On error, the dialog stays open, but the main screen shows a SnackBar.
+          // The button will re-enable because the state is no longer ActionInProgress.
+        }
+      },
+      child: AlertDialog(
+        title: Text('Deposit to ${widget.userName}'),
+        content: Form(
+          key: _formKey,
+          child: TextFormField(
+            controller: _amountController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Amount to Deposit',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: false),
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  (int.tryParse(value) ?? 0) <= 0) {
+                return 'Please enter a valid positive amount';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          BlocBuilder<AdminDigitalNoteBloc, AdminDigitalNoteState>(
+            builder: (context, state) {
+              // The button is disabled if ANY action is in progress on the main screen.
+              if (state is ActionInProgress) {
+                return const ElevatedButton(
+                  onPressed: null,
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+              return ElevatedButton(
+                onPressed: _onConfirmDeposit,
+                child: const Text('Confirm Deposit'),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

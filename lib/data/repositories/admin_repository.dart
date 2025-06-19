@@ -88,15 +88,16 @@ class AdminRepository {
     }
   }
 
-  /// Fetches all active and blocked digital notes for a specific user ID.
+  /// Fetches all of a user's notes that are NOT spent (i.e., 'active' or 'blocked').
   Future<List<DigitalNoteModel>> fetchUserDigitalNotes(String userId) async {
     try {
       // --- THIS IS THE FIX ---
-      // Removed the `.where('status', isEqualTo: 'active')` filter.
-      // The query now fetches all notes for the user, regardless of status.
+      // The `whereIn` operator allows us to fetch documents where the 'status'
+      // field is either 'active' OR 'blocked', effectively excluding 'spent' notes.
       final querySnapshot = await _firestore
           .collection('digital_notes')
           .where('ownerUserId', isEqualTo: userId)
+          .where('status', whereIn: ['active', 'blocked'])
           .orderBy('denomination', descending: true)
           .get();
 
