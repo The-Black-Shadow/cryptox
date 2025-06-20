@@ -1,8 +1,12 @@
 import 'package:cryptox/data/models/digital_note_model.dart';
+import 'package:cryptox/data/models/digital_note_transaction_model.dart';
 import 'package:cryptox/data/repositories/digital_note_repository.dart';
 import 'package:cryptox/logic/bloc/digital_note/digital_note_bloc.dart';
+import 'package:cryptox/logic/bloc/digital_note_history/digital_note_history_bloc.dart';
 import 'package:cryptox/logic/bloc/send_digital_note/send_digital_note_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -48,18 +52,35 @@ class DigitalNoteScreen extends StatelessWidget {
                         horizontal: 16.0,
                         vertical: 8.0,
                       ),
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.send),
-                        label: const Text('Send Digital Notes'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 44),
-                          backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () {
-                          // Trigger the dialog with the current balance
-                          _showSendDialog(context, state.totalBalance);
-                        },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.send),
+                              label: const Text('Send Notes'),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 44),
+                                backgroundColor: Colors.teal,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () =>
+                                  _showSendDialog(context, state.totalBalance),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.history),
+                              label: const Text('History'),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 44),
+                                backgroundColor: Colors.cyan,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => _showHistoryDialog(context),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const Divider(height: 24),
@@ -67,7 +88,7 @@ class DigitalNoteScreen extends StatelessWidget {
                       const Expanded(
                         child: Center(
                           child: Text(
-                            'You have no digital notes.',
+                            'You have no active digital notes.',
                             style: TextStyle(fontSize: 18, color: Colors.grey),
                           ),
                         ),
@@ -94,24 +115,17 @@ class DigitalNoteScreen extends StatelessWidget {
   }
 
   void _showSendDialog(BuildContext context, double currentBalance) {
-    // --- THIS IS THE FIX ---
-    // 1. Get the repository from the screen's context, which can see it.
-    final digitalNoteRepository = RepositoryProvider.of<DigitalNoteRepository>(
-      context,
-    );
-    // 2. Get the main screen's BLoC instance to pass it down for refreshing later.
     final digitalNoteBloc = BlocProvider.of<DigitalNoteBloc>(context);
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) {
-        // This is the dialog's local context
-        // 3. Provide a NEW SendDigitalNoteBloc instance specifically for the dialog.
-        //    Crucially, create it with the repository we fetched *before* showing the dialog.
         return BlocProvider(
-          create: (dialogContext) =>
-              SendDigitalNoteBloc(digitalNoteRepository: digitalNoteRepository),
+          create: (dialogContext) => SendDigitalNoteBloc(
+            digitalNoteRepository: RepositoryProvider.of<DigitalNoteRepository>(
+              context,
+            ),
+          ),
           child: SendDigitalNoteDialog(
             currentBalance: currentBalance,
             digitalNoteBloc: digitalNoteBloc,
@@ -120,9 +134,23 @@ class DigitalNoteScreen extends StatelessWidget {
       },
     );
   }
-}
 
-// --- WIDGETS ---
+  void _showHistoryDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return BlocProvider(
+          create: (dialogContext) => DigitalNoteHistoryBloc(
+            digitalNoteRepository: RepositoryProvider.of<DigitalNoteRepository>(
+              context,
+            ),
+          )..add(LoadNoteHistory()),
+          child: const HistoryDialog(),
+        );
+      },
+    );
+  }
+}
 
 class TotalBalanceHeader extends StatelessWidget {
   final double balance;
@@ -134,7 +162,6 @@ class TotalBalanceHeader extends StatelessWidget {
       locale: 'en_BD',
       symbol: '৳',
     ).format(balance);
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24.0),
@@ -191,7 +218,6 @@ class NoteCard extends StatelessWidget {
       symbol: '৳',
     ).format(note.denomination);
     final receivedFrom = note.receivedFromEmail;
-
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       elevation: 2,
@@ -235,7 +261,6 @@ class NoteCard extends StatelessWidget {
 class SendDigitalNoteDialog extends StatefulWidget {
   final double currentBalance;
   final DigitalNoteBloc digitalNoteBloc;
-
   const SendDigitalNoteDialog({
     super.key,
     required this.currentBalance,
@@ -260,11 +285,10 @@ class _SendDigitalNoteDialogState extends State<SendDigitalNoteDialog> {
 
   void _onSendPressed() {
     if (_formKey.currentState!.validate()) {
-      final amountToSend = double.parse(_amountController.text);
       context.read<SendDigitalNoteBloc>().add(
         SendNotesSubmitted(
           recipientEmail: _recipientController.text.trim(),
-          amount: amountToSend,
+          amount: double.parse(_amountController.text),
         ),
       );
     }
@@ -281,9 +305,8 @@ class _SendDigitalNoteDialogState extends State<SendDigitalNoteDialog> {
               backgroundColor: Colors.green,
             ),
           );
-          // Use the BLoC instance passed from the parent screen to refresh its data
           widget.digitalNoteBloc.add(LoadDigitalNotes());
-          Navigator.of(context).pop(); // Close the dialog
+          Navigator.of(context).pop();
         } else if (state is SendDigitalNoteFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.error), backgroundColor: Colors.red),
@@ -330,16 +353,13 @@ class _SendDigitalNoteDialogState extends State<SendDigitalNoteDialog> {
                   decimal: true,
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  if (value == null || value.isEmpty)
                     return 'Please enter an amount';
-                  }
                   final amount = double.tryParse(value);
-                  if (amount == null || amount <= 0) {
+                  if (amount == null || amount <= 0)
                     return 'Please enter a valid positive amount';
-                  }
-                  if (amount > widget.currentBalance) {
+                  if (amount > widget.currentBalance)
                     return 'Insufficient balance';
-                  }
                   return null;
                 },
               ),
@@ -370,6 +390,105 @@ class _SendDigitalNoteDialogState extends State<SendDigitalNoteDialog> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class HistoryDialog extends StatelessWidget {
+  const HistoryDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Transaction History'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: BlocBuilder<DigitalNoteHistoryBloc, DigitalNoteHistoryState>(
+          builder: (context, state) {
+            if (state is DigitalNoteHistoryLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state is DigitalNoteHistoryError) {
+              return Center(
+                child: Text(state.message, textAlign: TextAlign.center),
+              );
+            }
+            if (state is DigitalNoteHistoryLoaded) {
+              if (state.transactions.isEmpty) {
+                return const Center(
+                  child: Text("No transaction history found."),
+                );
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: state.transactions.length,
+                itemBuilder: (context, index) {
+                  final transaction = state.transactions[index];
+                  return HistoryCard(transaction: transaction);
+                },
+              );
+            }
+            return const Center(child: Text("Loading..."));
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
+class HistoryCard extends StatelessWidget {
+  final DigitalNoteTransactionModel transaction;
+  const HistoryCard({super.key, required this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return const SizedBox.shrink();
+
+    final bool isSent = transaction.senderId == currentUser.uid;
+    final iconColor = isSent ? Colors.red : Colors.green;
+    final title = isSent
+        ? 'Sent to: ${transaction.recipientEmail}'
+        : 'Received from: ${transaction.senderEmail}';
+    final amountString =
+        '${isSent ? '-' : '+'}৳${transaction.totalSentAmount.toStringAsFixed(2)}';
+    final formattedDate = DateFormat(
+      'MMM dd, yyyy – hh:mm a',
+    ).format(transaction.timestamp.toDate());
+
+    return ListTile(
+      leading: Icon(
+        isSent
+            ? Icons.arrow_circle_up_outlined
+            : Icons.arrow_circle_down_outlined,
+        color: iconColor,
+      ),
+      title: Text(title, style: const TextStyle(fontSize: 14)),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(formattedDate, style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 2),
+          SelectableText(
+            'Txn ID: ${transaction.transactionId}',
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.grey,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+      trailing: Text(
+        amountString,
+        style: TextStyle(color: iconColor, fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -44,7 +44,7 @@ class Wrapper extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: selectedIndex,
         onTap: (index) => _onItemTapped(context, index),
-        backgroundColor: const Color.fromARGB(255, 67, 66, 66),
+        backgroundColor: Colors.black,
         selectedItemColor: Colors.white,
         unselectedItemColor: const Color.fromARGB(255, 241, 27, 27),
         items: const [
@@ -54,6 +54,7 @@ class Wrapper extends StatelessWidget {
             label: 'Home',
           ),
           BottomNavigationBarItem(
+            backgroundColor: Colors.black,
             icon: Icon(Icons.account_balance_wallet, color: Colors.white),
             label: 'Crypto Wallet',
           ),

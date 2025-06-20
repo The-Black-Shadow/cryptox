@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptox/data/models/digital_note_model.dart';
+import 'package:cryptox/data/models/digital_note_transaction_model.dart';
 import 'package:cryptox/data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -34,6 +35,61 @@ class DigitalNoteRepository {
     } catch (e) {
       debugPrint("Error fetching digital notes: $e");
       throw Exception("Could not load your digital notes.");
+    }
+  }
+
+  /// Fetches all digital note transactions for the current user.
+  Future<List<DigitalNoteTransactionModel>>
+  fetchUserDigitalNoteTransactions() async {
+    final User? currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not logged in.');
+    }
+
+    try {
+      // Query for transactions where the user was the sender
+      final sentQuery = _firestore
+          .collection('digital_note_transactions')
+          .where('senderId', isEqualTo: currentUser.uid)
+          .get();
+
+      // Query for transactions where the user was the recipient
+      final receivedQuery = _firestore
+          .collection('digital_note_transactions')
+          .where('recipientId', isEqualTo: currentUser.uid)
+          .get();
+
+      // Wait for both queries to complete
+      final List<QuerySnapshot> results = await Future.wait([
+        sentQuery,
+        receivedQuery,
+      ]);
+
+      // Combine the documents from both queries
+      final allDocs = [...results[0].docs, ...results[1].docs];
+
+      // Use a map to handle potential duplicates (if a user sends to themselves, though disallowed)
+      final uniqueDocs = <String, DocumentSnapshot>{};
+      for (var doc in allDocs) {
+        uniqueDocs[doc.id] = doc;
+      }
+
+      // Convert the documents to TransactionRecordModel objects
+      final transactions = uniqueDocs.values
+          .map(
+            (doc) => DigitalNoteTransactionModel.fromJson(
+              doc.data() as Map<String, dynamic>,
+            ),
+          )
+          .toList();
+
+      // Sort the combined list by timestamp, newest first
+      transactions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+      return transactions;
+    } catch (e) {
+      debugPrint("Error fetching digital note transactions: $e");
+      throw Exception("Could not load transaction history.");
     }
   }
 
