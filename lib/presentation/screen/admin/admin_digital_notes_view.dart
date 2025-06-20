@@ -383,10 +383,10 @@ class AdminNoteCard extends StatelessWidget {
                       value: 'activate',
                       child: Text('Activate Note'),
                     ),
-                  const PopupMenuItem<String>(
-                    value: 'history',
-                    child: Text('View History'),
-                  ),
+                  // const PopupMenuItem<String>(
+                  //   value: 'history',
+                  //   child: Text('View History'),
+                  // ),
                 ],
               ),
             ],
