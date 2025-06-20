@@ -68,6 +68,7 @@ class AdminRepository {
     }
   }
 
+  /// Finds a user by their email to get their ID and profile.
   Future<Map<String, dynamic>?> findUserByEmail(String email) async {
     try {
       final query = await _firestore
@@ -110,6 +111,54 @@ class AdminRepository {
     }
   }
 
+  /// Fetches all notes associated with a specific transaction ID.
+  Future<List<DigitalNoteModel>> fetchNotesByTransactionId(
+    String transactionId,
+  ) async {
+    if (transactionId.trim().isEmpty) return [];
+
+    try {
+      // Find the main transaction record to get the list of created notes
+      final txDoc = await _firestore
+          .collection('digital_note_transactions')
+          .doc(transactionId.trim())
+          .get();
+
+      if (txDoc.exists && txDoc.data() != null) {
+        final createdNoteSerials = List<String>.from(
+          txDoc.data()!['createdNoteIds'] ?? [],
+        );
+        if (createdNoteSerials.isEmpty) return [];
+
+        // Query for notes with those specific serial numbers
+        final notesSnapshot = await _firestore
+            .collection('digital_notes')
+            .where('serialNumber', whereIn: createdNoteSerials)
+            .get();
+        return notesSnapshot.docs
+            .map((doc) => DigitalNoteModel.fromFirestore(doc))
+            .toList();
+      } else {
+        // Fallback for deposit transactions
+        final depositQuery = await _firestore
+            .collection('digital_notes')
+            .where(
+              'originatorInfo.depositTransactionId',
+              isEqualTo: transactionId.trim(),
+            )
+            .get();
+        if (depositQuery.docs.isEmpty)
+          throw Exception("Transaction record not found.");
+        return depositQuery.docs
+            .map((doc) => DigitalNoteModel.fromFirestore(doc))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint("Error fetching notes by transaction ID: $e");
+      throw Exception("Could not load notes for this transaction.");
+    }
+  }
+
   Future<void> updateNoteStatus(String noteId, String newStatus) async {
     if (noteId.isEmpty || (newStatus != 'active' && newStatus != 'blocked')) {
       throw Exception("Invalid input for updating note status.");
@@ -121,6 +170,31 @@ class AdminRepository {
     } catch (e) {
       throw Exception("Failed to update note status.");
     }
+  }
+
+  /// Blocks or activates all notes associated with a specific transaction ID.
+  Future<int> updateNotesStatusByTransactionId(
+    String transactionId,
+    String newStatus,
+  ) async {
+    if (transactionId.isEmpty ||
+        (newStatus != 'active' && newStatus != 'blocked')) {
+      throw Exception("Invalid input for updating note status.");
+    }
+
+    final querySnapshot = await _firestore
+        .collection('digital_notes')
+        .where('originTransactionId', isEqualTo: transactionId)
+        .get();
+
+    if (querySnapshot.docs.isEmpty) return 0; // No notes to update
+
+    final WriteBatch batch = _firestore.batch();
+    for (var doc in querySnapshot.docs) {
+      batch.update(doc.reference, {'status': newStatus});
+    }
+    await batch.commit();
+    return querySnapshot.docs.length;
   }
 
   Future<void> depositDigitalNotes({

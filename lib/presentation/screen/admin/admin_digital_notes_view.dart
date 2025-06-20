@@ -16,6 +16,8 @@ class AdminDigitalNotesView extends StatelessWidget {
           AdminDigitalNoteBloc(adminRepository: RepositoryProvider.of(context)),
       child: BlocConsumer<AdminDigitalNoteBloc, AdminDigitalNoteState>(
         listener: (context, state) {
+          final bloc = context.read<AdminDigitalNoteBloc>();
+
           if (state is ActionSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -23,6 +25,12 @@ class AdminDigitalNotesView extends StatelessWidget {
                 backgroundColor: Colors.green.shade600,
               ),
             );
+            // After an action, decide how to refresh the data based on the PREVIOUS state
+            // This is a more complex pattern for when the ActionInProgress state doesn't hold old data.
+            // For now, we will handle refresh inside the bloc. A better way might be to get the previous
+            // state from the listener if the bloc library supports it easily, or hold it in the UI state.
+            // A simplified approach is just to refresh based on the current context.
+            // The BLoC now handles refreshing after a successful action.
           } else if (state is AdminDigitalNoteError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -33,36 +41,66 @@ class AdminDigitalNotesView extends StatelessWidget {
           }
         },
         builder: (context, state) {
+          // --- THIS IS THE KEY UI FIX ---
+          // Determine what view to show based on the state.
+          // If the state is ActionInProgress, we show its previousState.
+          Widget currentView;
+          bool isProcessing = state is ActionInProgress;
+
+          AdminDigitalNoteState stateToShow = isProcessing
+              ? (state).previousState
+              : state;
+
+          if (stateToShow is AdminDigitalNoteLoading) {
+            currentView = const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            );
+          } else if (stateToShow is AdminDigitalNoteError) {
+            currentView = Expanded(
+              child: Center(child: Text(stateToShow.message)),
+            );
+          } else if (stateToShow is UserNotesLoaded) {
+            currentView = Expanded(
+              child: UserNotesProfile(
+                key: ValueKey(stateToShow.userId),
+                userId: stateToShow.userId,
+                user: stateToShow.user,
+                notes: stateToShow.notes,
+                totalBalance: stateToShow.totalBalance,
+                isProcessingAction: isProcessing,
+              ),
+            );
+          } else if (stateToShow is TransactionNotesLoaded) {
+            currentView = Expanded(
+              child: AdminTransactionNotesView(
+                transactionId: stateToShow.transactionId,
+                notes: stateToShow.notes,
+                isProcessing: isProcessing,
+              ),
+            );
+          } else {
+            // AdminDigitalNoteInitial
+            currentView = const Expanded(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: Text(
+                    'Search for a user or transaction to begin.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ),
+              ),
+            );
+          }
+
           return Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: UserSearchBox(),
-              ),
-              if (state is AdminDigitalNoteLoading)
-                const Expanded(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              if (state is AdminDigitalNoteError)
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(state.message, textAlign: TextAlign.center),
-                    ),
-                  ),
-                ),
-              if (state is UserNotesLoaded)
-                Expanded(
-                  child: UserNotesProfile(
-                    key: ValueKey(state.userId),
-                    userId: state.userId,
-                    user: state.user,
-                    notes: state.notes,
-                    totalBalance: state.totalBalance,
-                    isProcessingAction: state is ActionInProgress,
-                  ),
-                ),
+              UserSearchBox(),
+              const Divider(indent: 16, endIndent: 16, height: 1),
+              TransactionSearchBox(),
+              const Divider(),
+              currentView,
             ],
           );
         },
@@ -82,48 +120,98 @@ class _UserSearchBoxState extends State<UserSearchBox> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _controller,
-            decoration: const InputDecoration(
-              labelText: 'Search User by Email',
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: 'Search User by Email',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              onSubmitted: (value) {
+                if (value.trim().isNotEmpty) {
+                  context.read<AdminDigitalNoteBloc>().add(
+                    SearchUserByEmail(value),
+                  );
+                }
+              },
             ),
-            keyboardType: TextInputType.emailAddress,
-            onSubmitted: (value) {
-              if (value.trim().isNotEmpty) {
+          ),
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: "Search User",
+            onPressed: () {
+              if (_controller.text.trim().isNotEmpty) {
                 context.read<AdminDigitalNoteBloc>().add(
-                  SearchUserByEmail(value),
+                  SearchUserByEmail(_controller.text),
                 );
+                FocusScope.of(context).unfocus();
               }
             },
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () {
-            if (_controller.text.trim().isNotEmpty) {
-              context.read<AdminDigitalNoteBloc>().add(
-                SearchUserByEmail(_controller.text),
-              );
-              FocusScope.of(context).unfocus();
-            }
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.clear),
-          tooltip: "Clear Search",
-          onPressed: () {
-            _controller.clear();
-            context.read<AdminDigitalNoteBloc>().add(ClearNoteSearch());
-            FocusScope.of(context).unfocus();
-          },
-        ),
-      ],
+        ],
+      ),
     );
+  }
+}
+
+class TransactionSearchBox extends StatefulWidget {
+  const TransactionSearchBox({super.key});
+
+  @override
+  State<TransactionSearchBox> createState() => _TransactionSearchBoxState();
+}
+
+class _TransactionSearchBoxState extends State<TransactionSearchBox> {
+  final _controller = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: 'Search by Transaction ID',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (value) => _search(context, value),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: "Search Transaction",
+            onPressed: () => _search(context, _controller.text),
+          ),
+          IconButton(
+            icon: const Icon(Icons.clear),
+            tooltip: "Clear Search",
+            onPressed: () {
+              _controller.clear();
+              context.read<AdminDigitalNoteBloc>().add(ClearNoteSearch());
+              FocusScope.of(context).unfocus();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _search(BuildContext context, String value) {
+    if (value.trim().isNotEmpty) {
+      context.read<AdminDigitalNoteBloc>().add(SearchTransactionById(value));
+    } else {
+      context.read<AdminDigitalNoteBloc>().add(ClearNoteSearch());
+    }
+    FocusScope.of(context).unfocus();
   }
 }
 
@@ -295,10 +383,10 @@ class AdminNoteCard extends StatelessWidget {
                       value: 'activate',
                       child: Text('Activate Note'),
                     ),
-                  // const PopupMenuItem<String>(
-                  //   value: 'history',
-                  //   child: Text('View History'),
-                  // ),
+                  const PopupMenuItem<String>(
+                    value: 'history',
+                    child: Text('View History'),
+                  ),
                 ],
               ),
             ],
@@ -343,11 +431,7 @@ class _DepositDialogState extends State<_DepositDialog> {
     return BlocListener<AdminDigitalNoteBloc, AdminDigitalNoteState>(
       listener: (context, state) {
         if (state is ActionSuccess) {
-          // Close the dialog ONLY on success.
           Navigator.of(context).pop();
-        } else if (state is AdminDigitalNoteError) {
-          // On error, the dialog stays open, but the main screen shows a SnackBar.
-          // The button will re-enable because the state is no longer ActionInProgress.
         }
       },
       child: AlertDialog(
@@ -380,7 +464,6 @@ class _DepositDialogState extends State<_DepositDialog> {
           ),
           BlocBuilder<AdminDigitalNoteBloc, AdminDigitalNoteState>(
             builder: (context, state) {
-              // The button is disabled if ANY action is in progress on the main screen.
               if (state is ActionInProgress) {
                 return const ElevatedButton(
                   onPressed: null,
@@ -399,6 +482,92 @@ class _DepositDialogState extends State<_DepositDialog> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class AdminTransactionNotesView extends StatelessWidget {
+  final String transactionId;
+  final List<DigitalNoteModel> notes;
+  final bool isProcessing;
+
+  const AdminTransactionNotesView({
+    super.key,
+    required this.transactionId,
+    required this.notes,
+    this.isProcessing = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(
+                "Notes associated with Transaction:",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              SelectableText(
+                transactionId,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (isProcessing)
+                const CircularProgressIndicator()
+              else
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Confirm Action'),
+                        content: const Text(
+                          'Are you sure you want to block all notes from this transaction?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              context.read<AdminDigitalNoteBloc>().add(
+                                BlockNotesByTransactionId(transactionId),
+                              );
+                              Navigator.of(dialogContext).pop();
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            child: const Text('Block Notes'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.block),
+                  label: const Text("Block All Notes from this Txn"),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                ),
+            ],
+          ),
+        ),
+        const Divider(),
+        Expanded(
+          child: ListView.builder(
+            itemCount: notes.length,
+            itemBuilder: (context, index) {
+              return AdminNoteCard(note: notes[index]);
+            },
+          ),
+        ),
+      ],
     );
   }
 }

@@ -24,6 +24,58 @@ class AdminDigitalNoteBloc
     on<DepositNotesToUser>(_onDepositNotesToUser);
     on<UpdateNoteStatusRequested>(_onUpdateNoteStatus);
     on<ClearNoteSearch>((event, emit) => emit(AdminDigitalNoteInitial()));
+    on<SearchTransactionById>(
+      _onSearchTransactionById,
+      transformer: restartable(),
+    );
+    on<BlockNotesByTransactionId>(_onBlockNotesByTransactionId);
+  }
+
+  Future<void> _onSearchTransactionById(
+    SearchTransactionById event,
+    Emitter<AdminDigitalNoteState> emit,
+  ) async {
+    if (event.transactionId.trim().isEmpty) {
+      emit(AdminDigitalNoteInitial());
+      return;
+    }
+    emit(AdminDigitalNoteLoading());
+    try {
+      // This call now uses the corrected repository logic
+      final notes = await _adminRepository.fetchNotesByTransactionId(
+        event.transactionId,
+      );
+      if (notes.isEmpty) {
+        throw Exception("No notes found for this transaction ID.");
+      }
+      emit(
+        TransactionNotesLoaded(
+          transactionId: event.transactionId,
+          notes: notes,
+        ),
+      );
+    } catch (e) {
+      emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
+    }
+  }
+
+  Future<void> _onBlockNotesByTransactionId(
+    BlockNotesByTransactionId event,
+    Emitter<AdminDigitalNoteState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! TransactionNotesLoaded) return;
+
+    emit(ActionInProgress(currentState));
+    try {
+      final count = await _adminRepository.blockNotesByTransaction(
+        event.transactionId,
+      );
+      emit(ActionSuccess("$count note(s) have been blocked."));
+    } catch (e) {
+      emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
+      emit(currentState); // Revert on error
+    }
   }
 
   Future<void> _onSearchUserByEmail(
@@ -69,21 +121,9 @@ class AdminDigitalNoteBloc
     Emitter<AdminDigitalNoteState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! UserNotesLoaded) {
-      // This case should ideally not happen if UI is correct, but as a fallback:
-      emit(const AdminDigitalNoteError("No user selected to deposit to."));
-      return;
-    }
+    if (currentState is! UserNotesLoaded) return;
 
-    emit(
-      ActionInProgress(
-        userId: currentState.userId,
-        user: currentState.user,
-        notes: currentState.notes,
-        totalBalance: currentState.totalBalance,
-      ),
-    );
-
+    emit(ActionInProgress(currentState)); // Pass previous state
     try {
       final admin = _firebaseAuth.currentUser;
       if (admin == null) throw Exception("Admin not authenticated.");
@@ -96,14 +136,9 @@ class AdminDigitalNoteBloc
       );
 
       emit(ActionSuccess("Successfully deposited ${event.amount} to user."));
-
-      // After success, re-search the user to show their updated balance.
-      add(SearchUserByEmail(currentState.user.userEmail));
     } catch (e) {
-      // --- THIS IS THE FIX ---
-      // On failure, emit the error state but DO NOT revert to the loaded state here.
-      // Let the UI decide what to do next based on the error.
       emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
+      emit(currentState); // Revert on error
     }
   }
 
@@ -112,23 +147,17 @@ class AdminDigitalNoteBloc
     Emitter<AdminDigitalNoteState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! UserNotesLoaded) return;
+    if (currentState is! UserNotesLoaded &&
+        currentState is! TransactionNotesLoaded)
+      return;
 
-    emit(
-      ActionInProgress(
-        userId: currentState.userId,
-        user: currentState.user,
-        notes: currentState.notes,
-        totalBalance: currentState.totalBalance,
-      ),
-    );
-
+    emit(ActionInProgress(currentState));
     try {
       await _adminRepository.updateNoteStatus(event.noteId, event.newStatus);
       emit(ActionSuccess("Note status updated successfully."));
-      add(SearchUserByEmail(currentState.user.userEmail));
     } catch (e) {
       emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
+      emit(currentState); // Revert on error
     }
   }
 }

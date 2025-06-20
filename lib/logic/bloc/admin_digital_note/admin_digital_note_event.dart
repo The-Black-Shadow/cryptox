@@ -35,3 +35,17 @@ class UpdateNoteStatusRequested extends AdminDigitalNoteEvent {
 }
 
 class ClearNoteSearch extends AdminDigitalNoteEvent {}
+
+class SearchTransactionById extends AdminDigitalNoteEvent {
+  final String transactionId;
+  const SearchTransactionById(this.transactionId);
+  @override
+  List<Object> get props => [transactionId];
+}
+
+class BlockNotesByTransactionId extends AdminDigitalNoteEvent {
+  final String transactionId;
+  const BlockNotesByTransactionId(this.transactionId);
+  @override
+  List<Object> get props => [transactionId];
+}

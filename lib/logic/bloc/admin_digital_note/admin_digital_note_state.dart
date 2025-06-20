@@ -11,7 +11,7 @@ final class AdminDigitalNoteInitial extends AdminDigitalNoteState {}
 
 final class AdminDigitalNoteLoading extends AdminDigitalNoteState {}
 
-final class UserNotesLoaded extends AdminDigitalNoteState {
+class UserNotesLoaded extends AdminDigitalNoteState {
   final String userId;
   final UserModel user;
   final List<DigitalNoteModel> notes;
@@ -28,13 +28,25 @@ final class UserNotesLoaded extends AdminDigitalNoteState {
   List<Object> get props => [userId, user, notes, totalBalance];
 }
 
-final class ActionInProgress extends UserNotesLoaded {
-  const ActionInProgress({
-    required super.userId,
-    required super.user,
-    required super.notes,
-    required super.totalBalance,
+class TransactionNotesLoaded extends AdminDigitalNoteState {
+  final String transactionId;
+  final List<DigitalNoteModel> notes;
+
+  const TransactionNotesLoaded({
+    required this.transactionId,
+    required this.notes,
   });
+
+  @override
+  List<Object> get props => [transactionId, notes];
+}
+
+// This state holds the previous data while an action is happening
+final class ActionInProgress extends AdminDigitalNoteState {
+  final AdminDigitalNoteState previousState;
+  const ActionInProgress(this.previousState);
+  @override
+  List<Object> get props => [previousState];
 }
 
 final class ActionSuccess extends AdminDigitalNoteState {
