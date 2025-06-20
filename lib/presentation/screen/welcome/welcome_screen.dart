@@ -11,110 +11,126 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 24.0),
-            child: Text(
-              'Let\'s Get Started',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal, Colors.black],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-          BlocConsumer<SigninBloc, SigninState>(
-            builder: (context, state) {
-              if (state is SigninLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(height: 24.0),
+                Column(
+                  children: [
+                    Text(
+                      'Let\'s Get Started',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12.0),
+                    Text(
+                      'Join us and experience the future of finance.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white70,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Center(
+                    child: BlocConsumer<SigninBloc, SigninState>(
+                      builder: (context, state) {
+                        if (state is SigninLoading) {
+                          return const CircularProgressIndicator(
+                            color: Colors.white,
+                          );
+                        }
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AuthenticationButton(
+                              authenticationMethod: AuthenticationMethod.google,
+                              onPressed: () => context.read<SigninBloc>().add(
+                                RequestGoogleSigninEvent(),
+                              ),
+                              showLoader: false,
+                            ),
+                            const SizedBox(height: 16.0),
+                          ],
+                        );
+                      },
+                      listener: (context, state) {
+                        if (state is SigninSuccess) {
+                          if (state.userModel.role == 'admin') {
+                            context.goNamed(Routes.ADMIN_ROUTE);
+                          } else {
+                            context.goNamed(Routes.HOME_ROUTE);
+                          }
+                        } else if (state is SigninFailure) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(state.error)));
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    AuthenticationButton(
-                      authenticationMethod: AuthenticationMethod.google,
-                      onPressed: () => context.read<SigninBloc>().add(RequestGoogleSigninEvent()),
-                      // Don't show loader here; the BLoC state handles it for the whole section
-                      showLoader: false,
+                    const Divider(color: Colors.white54),
+                    const SizedBox(height: 12.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Already have an account?',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              context.pushNamed(Routes.SIGNIN_ROUTE),
+                          child: const Text(
+                            'Login',
+                            style: TextStyle(
+                              color: Colors.tealAccent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16.0),
-                    AuthenticationButton(
-                      authenticationMethod: AuthenticationMethod.facebook,
-                      onPressed: () {
-                        // TODO: Implement Facebook Sign-in
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Facebook sign-in not implemented yet.')),
-                        );
-                      },
-                      showLoader: false,
+                    const SizedBox(height: 8.0),
+                    FullWidthButton(
+                      buttonText: 'Create an account',
+                      onTap: () => context.pushNamed(Routes.SIGNUP_ROUTE),
+                      backgroundColor: Colors.tealAccent.shade700,
+                      textColor: Colors.black,
                     ),
-                    const SizedBox(height: 16.0),
-                    AuthenticationButton(
-                      authenticationMethod: AuthenticationMethod.twitter,
-                      onPressed: () {
-                         // TODO: Implement Twitter Sign-in
-                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Twitter sign-in not implemented yet.')),
-                        );
-                      },
-                      showLoader: false,
-                    ),
-                    const SizedBox(height: 16.0),
+                    const SizedBox(height: 12.0),
                   ],
-                ),
-              );
-            },
-            listener: (context, state) {
-              if (state is SigninSuccess) {
-                // --- THIS IS THE UPDATED ROUTING LOGIC ---
-                if (state.userModel.role == 'admin') {
-                  // If user is an admin, go to the Admin screen
-                  // Using goNamed replaces the navigation stack, which is good after login
-                  context.goNamed(Routes.ADMIN_ROUTE); 
-                } else {
-                  // Otherwise, go to the Home screen
-                  context.goNamed(Routes.HOME_ROUTE);
-                }
-              } else if (state is SigninFailure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.error)),
-                );
-              }
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 24.0, left: 16, right: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Already have an account?'),
-                    TextButton(
-                      onPressed: () {
-                        context.pushNamed(Routes.SIGNIN_ROUTE);
-                      },
-                      child: const Text('Login'),
-                    ),
-                  ],
-                ),
-                FullWidthButton(
-                  buttonText: 'Create an account',
-                  onTap: () {
-                    context.pushNamed(Routes.SIGNUP_ROUTE);
-                  },
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
