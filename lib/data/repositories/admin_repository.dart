@@ -301,6 +301,64 @@ class AdminRepository {
     return notesToBlockSnapshot.docs.length;
   }
 
+  Future<int> enableNotesByTransaction(String transactionId) async {
+    if (transactionId.trim().isEmpty) {
+      throw Exception("Transaction ID cannot be empty.");
+    }
+
+    final notesCollection = _firestore.collection('digital_notes');
+
+    // First, find the transaction record to get the list of created notes.
+    final txDoc = await _firestore
+        .collection('digital_note_transactions')
+        .doc(transactionId)
+        .get();
+
+    List<String> createdNoteSerials = [];
+    if (txDoc.exists && txDoc.data()!.containsKey('createdNoteIds')) {
+      createdNoteSerials = List<String>.from(
+        txDoc.data()!['createdNoteIds'] ?? [],
+      );
+    } else {
+      // Fallback for deposit transactions which might not have a separate ledger entry
+      final depositQuery = await notesCollection
+          .where(
+            'originatorInfo.depositTransactionId',
+            isEqualTo: transactionId,
+          )
+          .get();
+
+      if (depositQuery.docs.isEmpty)
+        throw Exception("No notes found for this transaction ID.");
+
+      final WriteBatch batch = _firestore.batch();
+      for (var doc in depositQuery.docs) {
+        batch.update(doc.reference, {'status': 'active'});
+      }
+      await batch.commit();
+      return depositQuery.docs.length;
+    }
+
+    if (createdNoteSerials.isEmpty) {
+      return 0; // No notes were created by this transaction to enable.
+    }
+
+    // Now, find all notes that have these serial numbers.
+    // Firestore 'whereIn' queries are limited to 30 items. For more, you'd need multiple queries.
+    final notesToEnableSnapshot = await notesCollection
+        .where('serialNumber', whereIn: createdNoteSerials)
+        .get();
+
+    if (notesToEnableSnapshot.docs.isEmpty) return 0;
+
+    final WriteBatch batch = _firestore.batch();
+    for (var doc in notesToEnableSnapshot.docs) {
+      batch.update(doc.reference, {'status': 'active'});
+    }
+    await batch.commit();
+    return notesToEnableSnapshot.docs.length;
+  }
+
   List<Map<String, double>> _calculateNoteDistribution(double amount) {
     final List<double> denominations = [
       1000,

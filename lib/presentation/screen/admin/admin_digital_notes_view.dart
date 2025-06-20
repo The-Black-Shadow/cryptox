@@ -521,39 +521,84 @@ class AdminTransactionNotesView extends StatelessWidget {
               if (isProcessing)
                 const CircularProgressIndicator()
               else
-                ElevatedButton.icon(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: const Text('Confirm Action'),
-                        content: const Text(
-                          'Are you sure you want to block all notes from this transaction?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              context.read<AdminDigitalNoteBloc>().add(
-                                BlockNotesByTransactionId(transactionId),
-                              );
-                              Navigator.of(dialogContext).pop();
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
+                Column(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Confirm Action'),
+                            content: const Text(
+                              'Are you sure you want to block all notes from this transaction?',
                             ),
-                            child: const Text('Block Notes'),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  context.read<AdminDigitalNoteBloc>().add(
+                                    BlockNotesByTransactionId(transactionId),
+                                  );
+                                  Navigator.of(dialogContext).pop();
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                                child: const Text('Block Notes'),
+                              ),
+                            ],
                           ),
-                        ],
+                        );
+                      },
+                      icon: const Icon(Icons.block),
+                      label: const Text("Block All Notes from this Txn"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.block),
-                  label: const Text("Block All Notes from this Txn"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Confirm Action'),
+                            content: const Text(
+                              'Are you sure you want to enable all notes from this transaction?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  context.read<AdminDigitalNoteBloc>().add(
+                                    EnableNotesByTransactionId(transactionId),
+                                  );
+                                  Navigator.of(dialogContext).pop();
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.green,
+                                ),
+                                child: const Text('Enable Notes'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text("Enable All Notes from this Txn"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                    ),
+                  ],
                 ),
             ],
           ),

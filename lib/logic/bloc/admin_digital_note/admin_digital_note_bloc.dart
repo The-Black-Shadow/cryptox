@@ -29,6 +29,7 @@ class AdminDigitalNoteBloc
       transformer: restartable(),
     );
     on<BlockNotesByTransactionId>(_onBlockNotesByTransactionId);
+    on<EnableNotesByTransactionId>(_onEnableNotesByTransactionId);
   }
 
   Future<void> _onSearchTransactionById(
@@ -72,6 +73,25 @@ class AdminDigitalNoteBloc
         event.transactionId,
       );
       emit(ActionSuccess("$count note(s) have been blocked."));
+    } catch (e) {
+      emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
+      emit(currentState); // Revert on error
+    }
+  }
+
+  Future<void> _onEnableNotesByTransactionId(
+    EnableNotesByTransactionId event,
+    Emitter<AdminDigitalNoteState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! TransactionNotesLoaded) return;
+
+    emit(ActionInProgress(currentState));
+    try {
+      final count = await _adminRepository.enableNotesByTransaction(
+        event.transactionId,
+      );
+      emit(ActionSuccess("$count note(s) have been enabled."));
     } catch (e) {
       emit(AdminDigitalNoteError(e.toString().replaceFirst("Exception: ", "")));
       emit(currentState); // Revert on error

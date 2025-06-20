@@ -49,3 +49,10 @@ class BlockNotesByTransactionId extends AdminDigitalNoteEvent {
   @override
   List<Object> get props => [transactionId];
 }
+
+class EnableNotesByTransactionId extends AdminDigitalNoteEvent {
+  final String transactionId;
+  const EnableNotesByTransactionId(this.transactionId);
+  @override
+  List<Object> get props => [transactionId];
+}
