@@ -202,7 +202,9 @@ class _SigninScreenState extends State<SigninScreen> {
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: () {
-                                    // TODO: Implement forgot password
+                                    context.goNamed(
+                                      Routes.FORGOT_PASSWORD_ROUTE,
+                                    );
                                   },
                                   child: const Text(
                                     'Forgot Password?',

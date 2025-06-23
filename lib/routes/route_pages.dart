@@ -3,6 +3,7 @@
 import 'package:cryptox/data/models/news_model.dart';
 import 'package:cryptox/presentation/screen/admin/admin_screen.dart';
 import 'package:cryptox/presentation/screen/all_coin/allcoin_screen.dart';
+import 'package:cryptox/presentation/screen/auth/forgot_password.dart';
 import 'package:cryptox/presentation/screen/auth/signin_screen.dart';
 import 'package:cryptox/presentation/screen/auth/signup_screen.dart';
 import 'package:cryptox/presentation/screen/digital_notes/digital_note_screen.dart';
@@ -61,6 +62,12 @@ class RoutePages {
         path: Routes.SIGNIN_ROUTE,
         name: Routes.SIGNIN_ROUTE,
         pageBuilder: (context, state) => MaterialPage(child: SigninScreen()),
+      ),
+
+      GoRoute(
+        path: Routes.FORGOT_PASSWORD_ROUTE,
+        name: Routes.FORGOT_PASSWORD_ROUTE,
+        pageBuilder: (context, state) => MaterialPage(child: ForgotPassword()),
       ),
 
       GoRoute(

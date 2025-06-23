@@ -200,4 +200,17 @@ class AuthRepository {
       throw Exception("Failed to update profile.");
     }
   }
+
+  // Send password reset email
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      debugPrint("Password reset email sent to: $email");
+    } catch (error) {
+      debugPrint("Error sending password reset email: $error");
+      throw Exception(
+        "Failed to send password reset email. Please check the email address.",
+      );
+    }
+  }
 }

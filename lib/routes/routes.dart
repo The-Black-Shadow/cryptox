@@ -9,6 +9,7 @@ class Routes {
   static const String WELCOME_ROUTE = '/welcome';
   static const String SIGNIN_ROUTE = '/signin';
   static const String SIGNUP_ROUTE = '/signup';
+  static const String FORGOT_PASSWORD_ROUTE = '/forgot_password';
   static const String WALLET_ROUTE = '/wallet';
   static const String DIGITAL_NOTE_ROUTE = '/digital_note';
   static const String PROFILE_ROUTE = '/profile';
