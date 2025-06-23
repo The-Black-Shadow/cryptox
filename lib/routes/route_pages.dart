@@ -15,7 +15,6 @@ import 'package:cryptox/presentation/screen/profile/profile_screen.dart';
 import 'package:cryptox/presentation/screen/splash/splash_screen.dart';
 import 'package:cryptox/presentation/screen/transaction_history/transaction_history.dart';
 import 'package:cryptox/presentation/screen/wallet/wallet_screen.dart';
-import 'package:cryptox/presentation/screen/welcome/welcome_screen.dart';
 import 'package:cryptox/presentation/screen/wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -31,13 +30,6 @@ class RoutePages {
         name: Routes.SPLASH_ROUTE,
         pageBuilder: (context, state) =>
             const MaterialPage(child: SplashScreen()),
-      ),
-      // Welcome screen route (independent)
-      GoRoute(
-        path: Routes.WELCOME_ROUTE,
-        name: Routes.WELCOME_ROUTE,
-        pageBuilder: (context, state) =>
-            const MaterialPage(child: WelcomeScreen()),
       ),
 
       GoRoute(

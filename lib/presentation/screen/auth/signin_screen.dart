@@ -91,7 +91,11 @@ class _SigninScreenState extends State<SigninScreen> {
                     child: BlocConsumer<SigninBloc, SigninState>(
                       listener: (context, state) {
                         if (state is SigninSuccess) {
-                          context.goNamed(Routes.HOME_ROUTE);
+                          if (state.userModel.role == 'admin') {
+                            context.goNamed(Routes.ADMIN_ROUTE);
+                          } else {
+                            context.goNamed(Routes.HOME_ROUTE);
+                          }
                         } else if (state is SigninFailure) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

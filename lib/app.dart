@@ -126,7 +126,7 @@ class MyApp extends StatelessWidget {
           listener: (context, state) {
             if (state is LogoutSuccess) {
               context.read<WalletBalanceBloc>().add(ResetWalletBalance());
-              RoutePages.ROUTER.goNamed(Routes.WELCOME_ROUTE);
+              RoutePages.ROUTER.goNamed(Routes.SIGNIN_ROUTE);
             }
           },
           child: ScreenUtilInit(

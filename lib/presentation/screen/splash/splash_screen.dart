@@ -32,7 +32,7 @@ class SplashScreen extends StatelessWidget {
               }
             } else {
               // User is not authenticated
-              context.goNamed(Routes.WELCOME_ROUTE);
+              context.goNamed(Routes.SIGNIN_ROUTE);
             }
           }
         },

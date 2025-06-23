@@ -85,10 +85,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (state is LogoutSuccess) {
             // Before navigating, reset all BLoCs that hold user-specific data.
             context.read<WalletBalanceBloc>().add(ResetWalletBalance());
-            context.read<SendCryptoBloc>().add(ResetSendCrypto()); // Dispatch correct event
+            context.read<SendCryptoBloc>().add(
+              ResetSendCrypto(),
+            ); // Dispatch correct event
 
             // Now, navigate the user to the welcome screen
-            context.goNamed(Routes.WELCOME_ROUTE);
+            context.goNamed(Routes.SIGNIN_ROUTE);
           }
           if (state is ProfileError) {
             ScaffoldMessenger.of(context).showSnackBar(
