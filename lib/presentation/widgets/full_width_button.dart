@@ -7,47 +7,39 @@ class FullWidthButton extends StatelessWidget {
     this.onTap,
     this.backgroundColor,
     this.textColor,
+    this.textStyle,
     required this.buttonText,
+    this.buttonChild,
   });
 
   final void Function()? onTap;
   final Color? backgroundColor;
   final Color? textColor;
   final String buttonText;
+  final TextStyle? textStyle;
+  final Widget? buttonChild;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Container(
-        height: 60.h,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: backgroundColor == null
-              ? const LinearGradient(
-                  colors: [Colors.tealAccent, Colors.teal],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(14.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              offset: const Offset(0, 4),
-              blurRadius: 6,
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          buttonText,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: textColor ?? Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 16.sp,
-          ),
+        height: 80.h,
+        color:
+            backgroundColor ?? Theme.of(context).colorScheme.onPrimaryContainer,
+        child: Center(
+          child:
+              buttonChild ??
+              Text(
+                buttonText,
+                style:
+                    textStyle ??
+                    Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color:
+                          textColor ??
+                          Theme.of(context).colorScheme.onSecondary,
+                    ),
+              ),
         ),
       ),
     );

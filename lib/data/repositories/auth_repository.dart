@@ -10,7 +10,7 @@ class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
- Future<UserModel?> signInWithGoogle() async {
+  Future<UserModel?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
@@ -19,17 +19,20 @@ class AuthRepository {
         return null;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
       );
 
-      final UserCredential authResult = await _auth.signInWithCredential(credential);
+      final UserCredential authResult = await _auth.signInWithCredential(
+        credential,
+      );
       final User? user = authResult.user;
 
       if (user != null) {
         // This now creates the user if they don't exist
-        await createUserInDatabase(user); 
+        await createUserInDatabase(user, null);
         // After signing in, fetch the full profile (which includes the role)
         final userModel = await fetchUserProfile();
         return userModel;
@@ -41,8 +44,34 @@ class AuthRepository {
     }
   }
 
+  //signUp with email
+  Future<UserModel?> signUpWithEmail(
+    String email,
+    String password,
+    String username,
+  ) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-  Future<void> createUserInDatabase(User user) async {
+      final user = credential.user;
+      if (user != null) {
+        // This now creates the user if they don't exist
+        await createUserInDatabase(user, username);
+        // After signing in, fetch the full profile (which includes the role)
+        final userModel = await fetchUserProfile();
+        return userModel;
+      }
+      return null;
+    } catch (error) {
+      debugPrint("Error signing in with Google: $error");
+      return null;
+    }
+  }
+
+  Future<void> createUserInDatabase(User user, String? username) async {
     try {
       final userDocRef = _firestore.collection('users').doc(user.uid);
       final userDoc = await userDocRef.get();
@@ -60,7 +89,7 @@ class AuthRepository {
       if (!userDoc.exists) {
         // User document does not exist, create it
         final data = UserModel(
-          userName: user.displayName ?? 'No Name',
+          userName: user.displayName ?? username!,
           userEmail: user.email ?? 'No Email',
           photoUrl: user.photoURL ?? '',
           phoneNumber: user.phoneNumber ?? '+88017xxxxxxxx',
