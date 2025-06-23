@@ -66,7 +66,28 @@ class AuthRepository {
       }
       return null;
     } catch (error) {
-      debugPrint("Error signing in with Google: $error");
+      debugPrint("Error signing up with email: $error");
+      return null;
+    }
+  }
+
+  //signIn with email
+  Future<UserModel?> signInWithEmail(String email, String password) async {
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = credential.user;
+      if (user != null) {
+        // After signing in, fetch the full profile (which includes the role)
+        final userModel = await fetchUserProfile();
+        return userModel;
+      }
+      return null;
+    } catch (error) {
+      debugPrint("Error signing in with email: $error");
       return null;
     }
   }
