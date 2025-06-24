@@ -52,12 +52,59 @@ class AdminDigitalNotesView extends StatelessWidget {
               : state;
 
           if (stateToShow is AdminDigitalNoteLoading) {
-            currentView = const Expanded(
-              child: Center(child: CircularProgressIndicator()),
+            currentView = Expanded(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: const CircularProgressIndicator(),
+                ),
+              ),
             );
           } else if (stateToShow is AdminDigitalNoteError) {
             currentView = Expanded(
-              child: Center(child: Text(stateToShow.message)),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        stateToShow.message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             );
           } else if (stateToShow is UserNotesLoaded) {
             currentView = Expanded(
@@ -80,28 +127,91 @@ class AdminDigitalNotesView extends StatelessWidget {
             );
           } else {
             // AdminDigitalNoteInitial
-            currentView = const Expanded(
+            currentView = Expanded(
               child: Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Text(
-                    'Search for a user or transaction to begin.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                child: Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                          ),
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: const Icon(
+                          Icons.search,
+                          size: 48,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Search for Digital Notes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Enter a user email or transaction ID to begin.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ],
                   ),
                 ),
               ),
             );
           }
 
-          return Column(
-            children: [
-              UserSearchBox(),
-              const Divider(indent: 16, endIndent: 16, height: 1),
-              TransactionSearchBox(),
-              const Divider(),
-              currentView,
-            ],
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Search Cards
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const UserSearchBox(),
+                      const SizedBox(height: 16),
+                      Container(height: 1, color: Colors.grey.shade200),
+                      const SizedBox(height: 16),
+                      const TransactionSearchBox(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                currentView,
+              ],
+            ),
           );
         },
       ),
@@ -120,31 +230,36 @@ class _UserSearchBoxState extends State<UserSearchBox> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                labelText: 'Search User by Email',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12.0),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  context.read<AdminDigitalNoteBloc>().add(
-                    SearchUserByEmail(value),
-                  );
-                }
-              },
+    return TextField(
+      controller: _controller,
+      decoration: InputDecoration(
+        labelText: 'Search User by Email',
+        hintText: 'Enter user email address...',
+        prefixIcon: const Icon(Icons.person_search, color: Color(0xFF667eea)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        suffixIcon: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
             ),
+            borderRadius: BorderRadius.circular(8),
           ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: "Search User",
+          child: IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () {
               if (_controller.text.trim().isNotEmpty) {
                 context.read<AdminDigitalNoteBloc>().add(
@@ -154,8 +269,14 @@ class _UserSearchBoxState extends State<UserSearchBox> {
               }
             },
           ),
-        ],
+        ),
       ),
+      keyboardType: TextInputType.emailAddress,
+      onSubmitted: (value) {
+        if (value.trim().isNotEmpty) {
+          context.read<AdminDigitalNoteBloc>().add(SearchUserByEmail(value));
+        }
+      },
     );
   }
 }
@@ -172,36 +293,68 @@ class _TransactionSearchBoxState extends State<TransactionSearchBox> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                labelText: 'Search by Transaction ID',
-                border: OutlineInputBorder(),
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText: 'Search by Transaction ID',
+              hintText: 'Enter transaction ID...',
+              prefixIcon: const Icon(
+                Icons.receipt_long,
+                color: Color(0xFF667eea),
               ),
-              onSubmitted: (value) => _search(context, value),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFF667eea),
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
             ),
+            onSubmitted: (value) => _search(context, value),
           ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: "Search Transaction",
+        ),
+        const SizedBox(width: 12),
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () => _search(context, _controller.text),
           ),
-          IconButton(
-            icon: const Icon(Icons.clear),
-            tooltip: "Clear Search",
+        ),
+        const SizedBox(width: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.clear, color: Colors.grey),
             onPressed: () {
               _controller.clear();
               context.read<AdminDigitalNoteBloc>().add(ClearNoteSearch());
               FocusScope.of(context).unfocus();
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -251,54 +404,185 @@ class UserNotesProfile extends StatelessWidget {
       symbol: '৳',
     ).format(totalBalance);
 
-    return Column(
-      children: [
-        ListTile(
-          leading: CircleAvatar(
-            backgroundImage: user.photoUrl.isNotEmpty
-                ? NetworkImage(user.photoUrl)
-                : null,
-            child: user.photoUrl.isEmpty ? const Icon(Icons.person) : null,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
-          title: Text(
-            user.userName,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(user.userEmail),
-          trailing: isProcessingAction
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(),
-                )
-              : ElevatedButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Deposit'),
-                  onPressed: () => _showDepositDialog(context),
+        ],
+      ),
+      child: Column(
+        children: [
+          // User Profile Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: CircleAvatar(
+                    radius: 30,
+                    backgroundImage: user.photoUrl.isNotEmpty
+                        ? NetworkImage(user.photoUrl)
+                        : null,
+                    child: user.photoUrl.isEmpty
+                        ? const Icon(Icons.person, size: 30)
+                        : null,
+                  ),
                 ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(
-            'Total Note Balance: $formattedBalance',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-        ),
-        const Divider(),
-        Expanded(
-          child: notes.isEmpty
-              ? const Center(
-                  child: Text('This user has no active digital notes.'),
-                )
-              : ListView.builder(
-                  itemCount: notes.length,
-                  itemBuilder: (context, index) {
-                    final note = notes[index];
-                    return AdminNoteCard(note: note);
-                  },
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.userName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user.userEmail,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-        ),
-      ],
+                if (isProcessingAction)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                else
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Deposit'),
+                    onPressed: () => _showDepositDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF667eea),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Balance Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.account_balance_wallet,
+                    color: Colors.green.shade600,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Total Note Balance',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    Text(
+                      formattedBalance,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            color: Colors.grey.shade200,
+          ),
+          // Notes List
+          Expanded(
+            child: notes.isEmpty
+                ? Container(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.note_alt_outlined,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No Digital Notes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'This user has no active digital notes.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: notes.length,
+                    itemBuilder: (context, index) {
+                      final note = notes[index];
+                      return AdminNoteCard(note: note);
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -315,45 +599,99 @@ class AdminNoteCard extends StatelessWidget {
     ).format(note.denomination);
     final bool isActive = note.status == 'active';
     final Color statusColor = isActive ? Colors.green : Colors.red;
-    final Color cardColor = isActive
-        ? Theme.of(context).cardColor
-        : Colors.grey.shade300;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      color: cardColor,
-      child: Opacity(
-        opacity: isActive ? 1.0 : 0.6,
-        child: ListTile(
-          title: Text(
-            formattedDenomination,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.white : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive ? Colors.grey.shade200 : Colors.grey.shade300,
+        ),
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        children: [
+          // Status indicator
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isActive ? Icons.check_circle : Icons.block,
+              color: statusColor,
+              size: 24,
+            ),
           ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SelectableText(
-                'S/N: ${note.serialNumber}',
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-              ),
-              Text(
-                'From: ${note.receivedFromEmail}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  formattedDenomination,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isActive ? Colors.black : Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: SelectableText(
+                    'S/N: ${note.serialNumber}',
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 10,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'From: ${note.receivedFromEmail}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
+          Column(
             children: [
-              Text(
-                note.status.toUpperCase(),
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  note.status.toUpperCase(),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(height: 8),
               PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'block') {
@@ -372,26 +710,39 @@ class AdminNoteCard extends StatelessWidget {
                     );
                   }
                 },
+                icon: const Icon(Icons.more_vert, size: 18),
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                   if (isActive)
                     const PopupMenuItem<String>(
                       value: 'block',
-                      child: Text('Block Note'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.block, size: 16, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Block Note'),
+                        ],
+                      ),
                     ),
                   if (!isActive)
                     const PopupMenuItem<String>(
                       value: 'activate',
-                      child: Text('Activate Note'),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Colors.green,
+                          ),
+                          SizedBox(width: 8),
+                          Text('Activate Note'),
+                        ],
+                      ),
                     ),
-                  // const PopupMenuItem<String>(
-                  //   value: 'history',
-                  //   child: Text('View History'),
-                  // ),
                 ],
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -435,15 +786,51 @@ class _DepositDialogState extends State<_DepositDialog> {
         }
       },
       child: AlertDialog(
-        title: Text('Deposit to ${widget.userName}'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.add, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text('Deposit to ${widget.userName}')),
+          ],
+        ),
         content: Form(
           key: _formKey,
           child: TextFormField(
             controller: _amountController,
             autofocus: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Amount to Deposit',
-              border: OutlineInputBorder(),
+              hintText: 'Enter amount in BDT...',
+              prefixIcon: const Icon(
+                Icons.attach_money,
+                color: Color(0xFF667eea),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFF667eea),
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
             ),
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -460,23 +847,58 @@ class _DepositDialogState extends State<_DepositDialog> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           BlocBuilder<AdminDigitalNoteBloc, AdminDigitalNoteState>(
             builder: (context, state) {
               if (state is ActionInProgress) {
-                return const ElevatedButton(
-                  onPressed: null,
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const ElevatedButton(
+                    onPressed: null,
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStatePropertyAll(
+                        Colors.transparent,
+                      ),
+                      shadowColor: WidgetStatePropertyAll(Colors.transparent),
+                    ),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
                   ),
                 );
               }
-              return ElevatedButton(
-                onPressed: _onConfirmDeposit,
-                child: const Text('Confirm Deposit'),
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  onPressed: _onConfirmDeposit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Confirm Deposit',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               );
             },
           ),
@@ -500,119 +922,221 @@ class AdminTransactionNotesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Text(
-                "Notes associated with Transaction:",
-                style: Theme.of(context).textTheme.titleMedium,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Transaction Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
               ),
-              SelectableText(
-                transactionId,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  color: Colors.grey,
-                ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-              const SizedBox(height: 10),
-              if (isProcessing)
-                const CircularProgressIndicator()
-              else
-                Column(
+            ),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (dialogContext) => AlertDialog(
-                            title: const Text('Confirm Action'),
-                            content: const Text(
-                              'Are you sure you want to block all notes from this transaction?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  context.read<AdminDigitalNoteBloc>().add(
-                                    BlockNotesByTransactionId(transactionId),
-                                  );
-                                  Navigator.of(dialogContext).pop();
-                                },
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                ),
-                                child: const Text('Block Notes'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.block),
-                      label: const Text("Block All Notes from this Txn"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long,
+                        color: Colors.white,
+                        size: 24,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (dialogContext) => AlertDialog(
-                            title: const Text('Confirm Action'),
-                            content: const Text(
-                              'Are you sure you want to enable all notes from this transaction?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  context.read<AdminDigitalNoteBloc>().add(
-                                    EnableNotesByTransactionId(transactionId),
-                                  );
-                                  Navigator.of(dialogContext).pop();
-                                },
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.green,
-                                ),
-                                child: const Text('Enable Notes'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text("Enable All Notes from this Txn"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Text(
+                        "Transaction Notes",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
                 ),
-            ],
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    transactionId,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const Divider(),
-        Expanded(
-          child: ListView.builder(
-            itemCount: notes.length,
-            itemBuilder: (context, index) {
-              return AdminNoteCard(note: notes[index]);
-            },
+          // Actions Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: isProcessing
+                ? const CircularProgressIndicator()
+                : Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: const Row(
+                                  children: [
+                                    Icon(Icons.block, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Block Notes'),
+                                  ],
+                                ),
+                                content: const Text(
+                                  'Are you sure you want to block all notes from this transaction?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      context.read<AdminDigitalNoteBloc>().add(
+                                        BlockNotesByTransactionId(
+                                          transactionId,
+                                        ),
+                                      );
+                                      Navigator.of(dialogContext).pop();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Block Notes'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.block),
+                          label: const Text("Block All"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Enable Notes'),
+                                  ],
+                                ),
+                                content: const Text(
+                                  'Are you sure you want to enable all notes from this transaction?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      context.read<AdminDigitalNoteBloc>().add(
+                                        EnableNotesByTransactionId(
+                                          transactionId,
+                                        ),
+                                      );
+                                      Navigator.of(dialogContext).pop();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Enable Notes'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text("Enable All"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
-        ),
-      ],
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            color: Colors.grey.shade200,
+          ),
+          // Notes List
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: notes.length,
+              itemBuilder: (context, index) {
+                return AdminNoteCard(note: notes[index]);
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

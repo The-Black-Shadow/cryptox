@@ -61,183 +61,415 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildProfileItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool editable,
+    VoidCallback? onEdit,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF667eea).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: const Color(0xFF667eea), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (editable && onEdit != null)
+            IconButton(
+              onPressed: onEdit,
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF667eea).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit,
+                  size: 16,
+                  color: Color(0xFF667eea),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<ProfileBloc>().add(LogoutEvent());
-            },
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
           ),
-        ],
-      ),
-      body: BlocListener<ProfileBloc, ProfileState>(
-        listener: (context, state) {
-          // --- THIS IS THE CORRECTED LOGIC ---
-          if (state is LogoutSuccess) {
-            // Before navigating, reset all BLoCs that hold user-specific data.
-            context.read<WalletBalanceBloc>().add(ResetWalletBalance());
-            context.read<SendCryptoBloc>().add(
-              ResetSendCrypto(),
-            ); // Dispatch correct event
-
-            // Now, navigate the user to the welcome screen
-            context.goNamed(Routes.SIGNIN_ROUTE);
-          }
-          if (state is ProfileError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          if (state is ProfileUpdateSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Profile updated successfully!"),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        },
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          child: SafeArea(
-            child: BlocBuilder<ProfileBloc, ProfileState>(
-              builder: (context, state) {
-                if (state is ProfileLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  );
-                }
-                if (state is ProfileLoaded) {
-                  final UserModel user = state.user;
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 32.0,
-                      ),
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundImage: user.photoUrl.isNotEmpty
-                                ? NetworkImage(user.photoUrl)
-                                : null,
-                            child: user.photoUrl.isEmpty
-                                ? const Icon(Icons.person, size: 60)
-                                : null,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Hello, ${user.userName}',
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                            textAlign: TextAlign.center,
+                          child: const Icon(
+                            Icons.person,
+                            size: 32,
+                            color: Colors.white,
                           ),
-                          const SizedBox(height: 32),
-                          Card(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 6,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 16,
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Profile',
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.person,
-                                      color: Colors.blueGrey,
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.logout, color: Colors.white),
+                      ),
+                      onPressed: () {
+                        context.read<ProfileBloc>().add(LogoutEvent());
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content Section
+              Expanded(
+                child: BlocListener<ProfileBloc, ProfileState>(
+                  listener: (context, state) {
+                    // --- THIS IS THE CORRECTED LOGIC ---
+                    if (state is LogoutSuccess) {
+                      // Before navigating, reset all BLoCs that hold user-specific data.
+                      context.read<WalletBalanceBloc>().add(
+                        ResetWalletBalance(),
+                      );
+                      context.read<SendCryptoBloc>().add(
+                        ResetSendCrypto(),
+                      ); // Dispatch correct event
+
+                      // Now, navigate the user to the welcome screen
+                      context.goNamed(Routes.SIGNIN_ROUTE);
+                    }
+                    if (state is ProfileError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                    if (state is ProfileUpdateSuccess) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Profile updated successfully!"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                  child: BlocBuilder<ProfileBloc, ProfileState>(
+                    builder: (context, state) {
+                      if (state is ProfileLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        );
+                      }
+                      if (state is ProfileLoaded) {
+                        final UserModel user = state.user;
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          child: Column(
+                            children: [
+                              // Profile Avatar Card
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
                                     ),
-                                    title: Text(user.userName),
-                                    trailing: IconButton(
-                                      icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () => _showEditDialog(
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 60,
+                                      backgroundColor: const Color(
+                                        0xFF667eea,
+                                      ).withOpacity(0.1),
+                                      backgroundImage: user.photoUrl.isNotEmpty
+                                          ? NetworkImage(user.photoUrl)
+                                          : null,
+                                      child: user.photoUrl.isEmpty
+                                          ? const Icon(
+                                              Icons.person,
+                                              size: 60,
+                                              color: Color(0xFF667eea),
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Hello, ${user.userName}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall
+                                          ?.copyWith(
+                                            color: const Color(0xFF667eea),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFF667eea,
+                                        ).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        user.role.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Color(0xFF667eea),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // Profile Information Card
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Profile Information',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF667eea),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildProfileItem(
+                                      context,
+                                      icon: Icons.person,
+                                      label: 'Username',
+                                      value: user.userName,
+                                      editable: true,
+                                      onEdit: () => _showEditDialog(
                                         context,
                                         user.userName,
                                         'user_name',
                                         'Username',
                                       ),
                                     ),
-                                  ),
-                                  const Divider(),
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.email,
-                                      color: Colors.blueGrey,
+                                    const SizedBox(height: 16),
+                                    _buildProfileItem(
+                                      context,
+                                      icon: Icons.email,
+                                      label: 'Email',
+                                      value: user.userEmail,
+                                      editable: false,
                                     ),
-                                    title: Text(user.userEmail),
-                                  ),
-                                  const Divider(),
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.phone,
-                                      color: Colors.blueGrey,
-                                    ),
-                                    title: Text(user.phoneNumber),
-                                    trailing: IconButton(
-                                      icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () => _showEditDialog(
+                                    const SizedBox(height: 16),
+                                    _buildProfileItem(
+                                      context,
+                                      icon: Icons.phone,
+                                      label: 'Phone Number',
+                                      value: user.phoneNumber,
+                                      editable: true,
+                                      onEdit: () => _showEditDialog(
                                         context,
                                         user.phoneNumber,
                                         'phone_number',
                                         'Phone Number',
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
+
+                              if (state is ProfileUpdating) ...[
+                                const SizedBox(height: 24),
+                                Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CircularProgressIndicator(
+                                        color: Color(0xFF667eea),
+                                      ),
+                                      SizedBox(width: 16),
+                                      Text(
+                                        'Updating profile...',
+                                        style: TextStyle(
+                                          color: Color(0xFF667eea),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              const SizedBox(height: 32),
+
+                              // App Branding
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.currency_bitcoin,
+                                        size: 32,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'CryptoX',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    Text(
+                                      'Your Digital Finance Partner',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(color: Colors.white70),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 32),
+                            ],
                           ),
-                          if (state is ProfileUpdating) ...[
-                            const SizedBox(height: 20),
-                            const CircularProgressIndicator(),
-                          ],
-                          const Spacer(),
-                          Text(
-                            "Cryptox",
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(color: Colors.white60),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-                return const Center(
-                  child: Text(
-                    'Loading profile...',
-                    style: TextStyle(color: Colors.white),
+                        );
+                      }
+                      return Container(
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Loading profile...',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

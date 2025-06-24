@@ -220,386 +220,622 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Wallet"), centerTitle: true),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<WalletBalanceBloc, WalletBalanceState>(
-            listener: (context, state) {
-              if (state is WalletBalanceLoaded) {
-                _initializeDropdownSelections(state.availableCoins);
-              }
-            },
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
           ),
-          BlocListener<CryptoConvertBloc, CryptoConvertState>(
-            listener: (context, state) {
-              if (!mounted) return;
-              if (state is CryptoConvertRateLoaded) {
-                final currentAmount =
-                    double.tryParse(amountController.text) ?? -1;
-                final fromInfo = _fromCoinDisplayName != null
-                    ? supportedCoinsDisplayInfo.firstWhere(
-                        (c) => c.displayName == _fromCoinDisplayName,
-                      )
-                    : null;
-                final toInfo = _toCoinDisplayName != null
-                    ? supportedCoinsDisplayInfo.firstWhere(
-                        (c) => c.displayName == _toCoinDisplayName,
-                      )
-                    : null;
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet,
+                        size: 32,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'My Wallet',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
 
-                if (fromInfo != null &&
-                    toInfo != null &&
-                    state.amountFrom == currentAmount &&
-                    state.fromCoinGeckoId == fromInfo.coinGeckoId &&
-                    state.toCoinGeckoId == toInfo.coinGeckoId) {
-                  setState(() {
-                    estimatedController.text =
-                        "${state.estimatedAmountTo.toStringAsFixed(8)} ${toInfo.symbol}";
-                    _currentRateInfo = state;
-                  });
-                }
-              } else if (state is CryptoConvertEstimatingRate) {
-                setState(() {
-                  estimatedController.text = 'Estimating...';
-                  _currentRateInfo = null;
-                });
-              } else if (state is CryptoConvertRateError) {
-                setState(() {
-                  estimatedController.text = 'Error fetching rate';
-                  _currentRateInfo = null;
-                });
-              } else if (state is CryptoConvertSuccess) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                amountController.clear();
-              } else if (state is CryptoConvertFailure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Conversion Failed: ${state.message}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-          ),
-        ],
-        child: BlocBuilder<WalletBalanceBloc, WalletBalanceState>(
-          builder: (context, walletState) {
-            if (walletState is WalletBalanceLoading ||
-                walletState is WalletBalanceInitial) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (walletState is WalletBalanceLoaded) {
-              final currentSelectedCoinInfo = selectedCoinName != null
-                  ? walletState.availableCoins.firstWhere(
-                      (c) => c.displayName == selectedCoinName,
-                      orElse: () => walletState.availableCoins.first,
-                    )
-                  : walletState.availableCoins.first;
-              final selectedBalanceAmount = _getBalanceForFirestoreKey(
-                walletState.cryptoBalance,
-                currentSelectedCoinInfo.firestoreKey,
-              );
-              final selectedFormattedBalance =
-                  '${selectedBalanceAmount.toStringAsFixed(6)} ${currentSelectedCoinInfo.symbol}';
-              final currentTetherBalance = walletState.cryptoBalance.tether;
+              // Content Section
+              Expanded(
+                child: MultiBlocListener(
+                  listeners: [
+                    BlocListener<WalletBalanceBloc, WalletBalanceState>(
+                      listener: (context, state) {
+                        if (state is WalletBalanceLoaded) {
+                          _initializeDropdownSelections(state.availableCoins);
+                        }
+                      },
+                    ),
+                    BlocListener<CryptoConvertBloc, CryptoConvertState>(
+                      listener: (context, state) {
+                        if (!mounted) return;
+                        if (state is CryptoConvertRateLoaded) {
+                          final currentAmount =
+                              double.tryParse(amountController.text) ?? -1;
+                          final fromInfo = _fromCoinDisplayName != null
+                              ? supportedCoinsDisplayInfo.firstWhere(
+                                  (c) => c.displayName == _fromCoinDisplayName,
+                                )
+                              : null;
+                          final toInfo = _toCoinDisplayName != null
+                              ? supportedCoinsDisplayInfo.firstWhere(
+                                  (c) => c.displayName == _toCoinDisplayName,
+                                )
+                              : null;
 
-              List<String> fromCoinItems = walletState.availableCoins
-                  .where((c) => c.displayName != _toCoinDisplayName)
-                  .map((info) => info.displayName)
-                  .toList();
-              List<String> toCoinItems = walletState.availableCoins
-                  .where((c) => c.displayName != _fromCoinDisplayName)
-                  .map((info) => info.displayName)
-                  .toList();
-
-              bool canAttemptConvert =
-                  _fromCoinDisplayName != null &&
-                  _toCoinDisplayName != null &&
-                  _fromCoinDisplayName != _toCoinDisplayName &&
-                  (double.tryParse(amountController.text) ?? 0.0) > 0;
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  context.read<WalletBalanceBloc>().add(LoadWalletBalance());
-                },
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(
-                            child: WalletButton(
-                              label: "Send USDT",
-                              icon: Icons.send,
-                              onPressed: () => _showSendDialog(
-                                context,
-                                currentTetherBalance,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: WalletButton(
-                              label: 'Deposit',
-                              icon: Icons.file_download_outlined,
-                              onPressed: () =>
-                                  context.pushNamed(Routes.PAYMENT_ROUTE),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: WalletButton(
-                              label: 'History',
-                              icon: Icons.history,
-                              onPressed: () => context.pushNamed(
-                                Routes.TRANSACTION_HISTORY_ROUTE,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                      const Text(
-                        "All Crypto Balances",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      CustomDropdownField(
-                        label: "",
-                        value: selectedCoinName,
-                        items: walletState.availableCoins
-                            .map((info) => info.displayName)
-                            .toList(),
-                        onChanged: (value) =>
-                            setState(() => selectedCoinName = value),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 20,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              selectedCoinName ?? 'N/A',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              selectedFormattedBalance,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      const Text(
-                        "Convert Coins",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomDropdownField(
-                              label: "From Coin",
-                              value: _fromCoinDisplayName,
-                              items: fromCoinItems,
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _fromCoinDisplayName = val;
-                                    if (_fromCoinDisplayName ==
-                                            _toCoinDisplayName &&
-                                        _toCoinDisplayName != null) {
-                                      _toCoinDisplayName = walletState
-                                          .availableCoins
-                                          .firstWhere(
-                                            (coin) =>
-                                                coin.displayName !=
-                                                _fromCoinDisplayName,
-                                            orElse: () => walletState
-                                                .availableCoins
-                                                .first,
-                                          )
-                                          .displayName;
-                                    }
-                                  });
-                                  _triggerRateEstimation();
-                                }
-                              },
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 10),
-                            child: Icon(Icons.swap_horiz, size: 30),
-                          ),
-                          Expanded(
-                            child: CustomDropdownField(
-                              label: "To Coin",
-                              value: _toCoinDisplayName,
-                              items: toCoinItems,
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _toCoinDisplayName = val;
-                                    if (_toCoinDisplayName ==
-                                            _fromCoinDisplayName &&
-                                        _fromCoinDisplayName != null) {
-                                      _fromCoinDisplayName = walletState
-                                          .availableCoins
-                                          .firstWhere(
-                                            (coin) =>
-                                                coin.displayName !=
-                                                _toCoinDisplayName,
-                                            orElse: () => walletState
-                                                .availableCoins
-                                                .first,
-                                          )
-                                          .displayName;
-                                    }
-                                  });
-                                  _triggerRateEstimation();
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: amountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: "Amount to Convert",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      BlocBuilder<CryptoConvertBloc, CryptoConvertState>(
-                        builder: (context, convertState) {
-                          Widget suffix = const SizedBox.shrink();
-                          if (convertState is CryptoConvertEstimatingRate) {
-                            suffix = const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            );
+                          if (fromInfo != null &&
+                              toInfo != null &&
+                              state.amountFrom == currentAmount &&
+                              state.fromCoinGeckoId == fromInfo.coinGeckoId &&
+                              state.toCoinGeckoId == toInfo.coinGeckoId) {
+                            setState(() {
+                              estimatedController.text =
+                                  "${state.estimatedAmountTo.toStringAsFixed(8)} ${toInfo.symbol}";
+                              _currentRateInfo = state;
+                            });
                           }
-                          return TextField(
-                            controller: estimatedController,
-                            readOnly: true,
-                            decoration: InputDecoration(
-                              labelText: "You will receive (approx.)",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              suffixIcon: suffix,
+                        } else if (state is CryptoConvertEstimatingRate) {
+                          setState(() {
+                            estimatedController.text = 'Estimating...';
+                            _currentRateInfo = null;
+                          });
+                        } else if (state is CryptoConvertRateError) {
+                          setState(() {
+                            estimatedController.text = 'Error fetching rate';
+                            _currentRateInfo = null;
+                          });
+                        } else if (state is CryptoConvertSuccess) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(state.message),
+                              backgroundColor: Colors.green,
                             ),
                           );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      BlocBuilder<CryptoConvertBloc, CryptoConvertState>(
-                        builder: (context, convertState) {
-                          bool isProcessing =
-                              convertState is CryptoConvertProcessing;
-                          bool isEstimating =
-                              convertState is CryptoConvertEstimatingRate;
-                          return ElevatedButton(
-                            onPressed:
-                                (isProcessing ||
-                                    isEstimating ||
-                                    !canAttemptConvert)
-                                ? null
-                                : _handleConvertPressed,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          amountController.clear();
+                        } else if (state is CryptoConvertFailure) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Conversion Failed: ${state.message}',
                               ),
-                              backgroundColor:
-                                  (isProcessing ||
-                                      isEstimating ||
-                                      !canAttemptConvert)
-                                  ? Colors.grey
-                                  : Theme.of(context).primaryColor,
-                            ),
-                            child: Center(
-                              child: (isProcessing)
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 3,
-                                      ),
-                                    )
-                                  : const Text(
-                                      "Convert",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ),
+                              backgroundColor: Colors.red,
                             ),
                           );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+                        }
+                      },
+                    ),
+                  ],
+                  child: BlocBuilder<WalletBalanceBloc, WalletBalanceState>(
+                    builder: (context, walletState) {
+                      if (walletState is WalletBalanceLoading ||
+                          walletState is WalletBalanceInitial) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        );
+                      } else if (walletState is WalletBalanceLoaded) {
+                        final currentSelectedCoinInfo = selectedCoinName != null
+                            ? walletState.availableCoins.firstWhere(
+                                (c) => c.displayName == selectedCoinName,
+                                orElse: () => walletState.availableCoins.first,
+                              )
+                            : walletState.availableCoins.first;
+                        final selectedBalanceAmount =
+                            _getBalanceForFirestoreKey(
+                              walletState.cryptoBalance,
+                              currentSelectedCoinInfo.firestoreKey,
+                            );
+                        final selectedFormattedBalance =
+                            '${selectedBalanceAmount.toStringAsFixed(6)} ${currentSelectedCoinInfo.symbol}';
+                        final currentTetherBalance =
+                            walletState.cryptoBalance.tether;
+
+                        List<String> fromCoinItems = walletState.availableCoins
+                            .where((c) => c.displayName != _toCoinDisplayName)
+                            .map((info) => info.displayName)
+                            .toList();
+                        List<String> toCoinItems = walletState.availableCoins
+                            .where((c) => c.displayName != _fromCoinDisplayName)
+                            .map((info) => info.displayName)
+                            .toList();
+
+                        bool canAttemptConvert =
+                            _fromCoinDisplayName != null &&
+                            _toCoinDisplayName != null &&
+                            _fromCoinDisplayName != _toCoinDisplayName &&
+                            (double.tryParse(amountController.text) ?? 0.0) > 0;
+
+                        return RefreshIndicator(
+                          onRefresh: () async {
+                            context.read<WalletBalanceBloc>().add(
+                              LoadWalletBalance(),
+                            );
+                          },
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20.0,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Action Buttons Card
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Quick Actions',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF667eea),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          Expanded(
+                                            child: WalletButton(
+                                              label: "Send USDT",
+                                              icon: Icons.send,
+                                              onPressed: () => _showSendDialog(
+                                                context,
+                                                currentTetherBalance,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: WalletButton(
+                                              label: 'Deposit',
+                                              icon:
+                                                  Icons.file_download_outlined,
+                                              onPressed: () =>
+                                                  context.pushNamed(
+                                                    Routes.PAYMENT_ROUTE,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: WalletButton(
+                                              label: 'History',
+                                              icon: Icons.history,
+                                              onPressed: () => context.pushNamed(
+                                                Routes
+                                                    .TRANSACTION_HISTORY_ROUTE,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 24),
+
+                                // Crypto Balances Card
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "All Crypto Balances",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF667eea),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      CustomDropdownField(
+                                        label: "",
+                                        value: selectedCoinName,
+                                        items: walletState.availableCoins
+                                            .map((info) => info.displayName)
+                                            .toList(),
+                                        onChanged: (value) => setState(
+                                          () => selectedCoinName = value,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 20,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFF667eea,
+                                          ).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(
+                                              0xFF667eea,
+                                            ).withOpacity(0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              selectedCoinName ?? 'N/A',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF667eea),
+                                              ),
+                                            ),
+                                            Text(
+                                              selectedFormattedBalance,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 24),
+
+                                // Convert Coins Card
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Convert Coins",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF667eea),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: CustomDropdownField(
+                                              label: "From Coin",
+                                              value: _fromCoinDisplayName,
+                                              items: fromCoinItems,
+                                              onChanged: (val) {
+                                                if (val != null) {
+                                                  setState(() {
+                                                    _fromCoinDisplayName = val;
+                                                    if (_fromCoinDisplayName ==
+                                                            _toCoinDisplayName &&
+                                                        _toCoinDisplayName !=
+                                                            null) {
+                                                      _toCoinDisplayName = walletState
+                                                          .availableCoins
+                                                          .firstWhere(
+                                                            (coin) =>
+                                                                coin.displayName !=
+                                                                _fromCoinDisplayName,
+                                                            orElse: () =>
+                                                                walletState
+                                                                    .availableCoins
+                                                                    .first,
+                                                          )
+                                                          .displayName;
+                                                    }
+                                                  });
+                                                  _triggerRateEstimation();
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                            ),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: const Color(
+                                                  0xFF667eea,
+                                                ).withOpacity(0.1),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.swap_horiz,
+                                                size: 24,
+                                                color: Color(0xFF667eea),
+                                              ),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: CustomDropdownField(
+                                              label: "To Coin",
+                                              value: _toCoinDisplayName,
+                                              items: toCoinItems,
+                                              onChanged: (val) {
+                                                if (val != null) {
+                                                  setState(() {
+                                                    _toCoinDisplayName = val;
+                                                    if (_toCoinDisplayName ==
+                                                            _fromCoinDisplayName &&
+                                                        _fromCoinDisplayName !=
+                                                            null) {
+                                                      _fromCoinDisplayName = walletState
+                                                          .availableCoins
+                                                          .firstWhere(
+                                                            (coin) =>
+                                                                coin.displayName !=
+                                                                _toCoinDisplayName,
+                                                            orElse: () =>
+                                                                walletState
+                                                                    .availableCoins
+                                                                    .first,
+                                                          )
+                                                          .displayName;
+                                                    }
+                                                  });
+                                                  _triggerRateEstimation();
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextField(
+                                        controller: amountController,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        decoration: InputDecoration(
+                                          labelText: "Amount to Convert",
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade300,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFF667eea),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      BlocBuilder<
+                                        CryptoConvertBloc,
+                                        CryptoConvertState
+                                      >(
+                                        builder: (context, convertState) {
+                                          Widget suffix =
+                                              const SizedBox.shrink();
+                                          if (convertState
+                                              is CryptoConvertEstimatingRate) {
+                                            suffix = const Padding(
+                                              padding: EdgeInsets.all(8.0),
+                                              child: SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Color(0xFF667eea),
+                                                    ),
+                                              ),
+                                            );
+                                          }
+                                          return TextField(
+                                            controller: estimatedController,
+                                            readOnly: true,
+                                            decoration: InputDecoration(
+                                              labelText:
+                                                  "You will receive (approx.)",
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey.shade300,
+                                                ),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: const BorderSide(
+                                                  color: Color(0xFF667eea),
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 12,
+                                                  ),
+                                              suffixIcon: suffix,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 24),
+                                      BlocBuilder<
+                                        CryptoConvertBloc,
+                                        CryptoConvertState
+                                      >(
+                                        builder: (context, convertState) {
+                                          bool isProcessing =
+                                              convertState
+                                                  is CryptoConvertProcessing;
+                                          bool isEstimating =
+                                              convertState
+                                                  is CryptoConvertEstimatingRate;
+                                          return SizedBox(
+                                            width: double.infinity,
+                                            height: 56,
+                                            child: ElevatedButton(
+                                              onPressed:
+                                                  (isProcessing ||
+                                                      isEstimating ||
+                                                      !canAttemptConvert)
+                                                  ? null
+                                                  : _handleConvertPressed,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(
+                                                  0xFF667eea,
+                                                ),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                elevation: 0,
+                                              ),
+                                              child: (isProcessing)
+                                                  ? const SizedBox(
+                                                      height: 20,
+                                                      width: 20,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            color: Colors.white,
+                                                            strokeWidth: 2,
+                                                          ),
+                                                    )
+                                                  : const Text(
+                                                      "Convert",
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 32),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                      return Container(
+                        alignment: Alignment.center,
+                        child: Text(
+                          walletState is WalletBalanceError
+                              ? walletState.message
+                              : 'An unknown error occurred.',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              );
-            }
-            return Center(
-              child: Text(
-                walletState is WalletBalanceError
-                    ? walletState.message
-                    : 'An unknown error occurred.',
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );

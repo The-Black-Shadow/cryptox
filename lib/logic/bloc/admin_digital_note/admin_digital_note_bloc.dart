@@ -168,8 +168,9 @@ class AdminDigitalNoteBloc
   ) async {
     final currentState = state;
     if (currentState is! UserNotesLoaded &&
-        currentState is! TransactionNotesLoaded)
+        currentState is! TransactionNotesLoaded) {
       return;
+    }
 
     emit(ActionInProgress(currentState));
     try {

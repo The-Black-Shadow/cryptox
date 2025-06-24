@@ -82,8 +82,9 @@ class WalletRepository {
   }) async {
     final User? currentUser = _firebaseAuth.currentUser;
     if (currentUser == null) throw Exception('User not logged in.');
-    if (currentUser.email == recipientEmail)
+    if (currentUser.email == recipientEmail) {
       throw Exception('You cannot send crypto to yourself.');
+    }
     if (amountToSend <= 0) throw Exception('Amount must be positive.');
 
     final recipientQuery = await _firestore
@@ -91,8 +92,9 @@ class WalletRepository {
         .where('user_email', isEqualTo: recipientEmail)
         .limit(1)
         .get();
-    if (recipientQuery.docs.isEmpty)
+    if (recipientQuery.docs.isEmpty) {
       throw Exception('Recipient user not found.');
+    }
     final recipientId = recipientQuery.docs.first.id;
     final recipientUser = UserModel.fromJson(recipientQuery.docs.first.data());
 
@@ -258,8 +260,9 @@ class WalletRepository {
 
     return _firestore.runTransaction((transaction) async {
       final balanceDoc = await transaction.get(balanceDocRef);
-      if (!balanceDoc.exists || balanceDoc.data() == null)
+      if (!balanceDoc.exists || balanceDoc.data() == null) {
         throw Exception("Balance document not found.");
+      }
 
       final balances = CryptoBalance.fromJson(balanceDoc.data()!);
       double getBalance(String key) {
@@ -278,8 +281,9 @@ class WalletRepository {
       }
 
       final currentFromBalance = getBalance(fromCoinKey);
-      if (currentFromBalance < fromAmount)
+      if (currentFromBalance < fromAmount) {
         throw Exception("Insufficient $fromCoinKey balance.");
+      }
 
       transaction.update(balanceDocRef, {
         fromCoinKey: FieldValue.increment(-fromAmount),
@@ -356,16 +360,18 @@ class WalletRepository {
       }
     }
 
-    if (collectedAmount < tetherAmountToSpend)
+    if (collectedAmount < tetherAmountToSpend) {
       throw Exception("Insufficient Tether balance.");
+    }
 
     return _firestore.runTransaction((transaction) async {
       for (var docSnapshot in docsToSpend) {
         final freshDoc = await transaction.get(docSnapshot.reference);
-        if (!freshDoc.exists)
+        if (!freshDoc.exists) {
           throw Exception(
             "Transaction failed. A parcel was spent. Please try again.",
           );
+        }
       }
 
       final List<ParcelModel> parcelsToSpendModels = docsToSpend

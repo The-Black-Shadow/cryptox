@@ -99,8 +99,9 @@ class DigitalNoteRepository {
   }) async {
     final User? currentUser = _firebaseAuth.currentUser;
     if (currentUser == null) throw Exception('User not logged in.');
-    if (currentUser.email == recipientEmail)
+    if (currentUser.email == recipientEmail) {
       throw Exception('You cannot send notes to yourself.');
+    }
     if (amountToSend <= 0) throw Exception('Amount must be positive.');
 
     final recipientQuery = await _firestore
@@ -108,8 +109,9 @@ class DigitalNoteRepository {
         .where('user_email', isEqualTo: recipientEmail.trim())
         .limit(1)
         .get();
-    if (recipientQuery.docs.isEmpty)
+    if (recipientQuery.docs.isEmpty) {
       throw Exception('Recipient user not found.');
+    }
     final recipientId = recipientQuery.docs.first.id;
     final recipientInfo = UserModel.fromJson(recipientQuery.docs.first.data());
 
@@ -137,8 +139,9 @@ class DigitalNoteRepository {
       }
     }
 
-    if (collectedAmount < amountToSend)
+    if (collectedAmount < amountToSend) {
       throw Exception("Insufficient balance to send this amount.");
+    }
 
     return _firestore.runTransaction((transaction) async {
       double amountStillNeeded = amountToSend;

@@ -147,8 +147,9 @@ class AdminRepository {
               isEqualTo: transactionId.trim(),
             )
             .get();
-        if (depositQuery.docs.isEmpty)
+        if (depositQuery.docs.isEmpty) {
           throw Exception("Transaction record not found.");
+        }
         return depositQuery.docs
             .map((doc) => DigitalNoteModel.fromFirestore(doc))
             .toList();
@@ -206,8 +207,9 @@ class AdminRepository {
     if (totalAmount <= 0) throw Exception("Deposit amount must be positive.");
 
     final notesToCreate = _calculateNoteDistribution(totalAmount);
-    if (notesToCreate.isEmpty)
+    if (notesToCreate.isEmpty) {
       throw Exception("Cannot create notes for this amount.");
+    }
 
     final WriteBatch batch = _firestore.batch();
     final depositTransactionId = 'DEP_${DateTime.now().millisecondsSinceEpoch}';
@@ -270,8 +272,9 @@ class AdminRepository {
           )
           .get();
 
-      if (depositQuery.docs.isEmpty)
+      if (depositQuery.docs.isEmpty) {
         throw Exception("No notes found for this transaction ID.");
+      }
 
       final WriteBatch batch = _firestore.batch();
       for (var doc in depositQuery.docs) {
@@ -328,8 +331,9 @@ class AdminRepository {
           )
           .get();
 
-      if (depositQuery.docs.isEmpty)
+      if (depositQuery.docs.isEmpty) {
         throw Exception("No notes found for this transaction ID.");
+      }
 
       final WriteBatch batch = _firestore.batch();
       for (var doc in depositQuery.docs) {
