@@ -81,6 +81,7 @@ flutter:
   assets:
     - .env
     - assets/lottiefiles/
+    - assets/images/
 
   #   - images/a_dot_ham.jpeg
 

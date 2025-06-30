@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:collection/collection.dart'; // Add `collection` package to pubspec.yaml
 
 class DigitalNoteScreen extends StatelessWidget {
   const DigitalNoteScreen({super.key});
@@ -61,7 +62,6 @@ class DigitalNoteScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 // Content Section
                 Expanded(
                   child: RefreshIndicator(
@@ -96,6 +96,17 @@ class DigitalNoteScreen extends StatelessWidget {
                           );
                         }
                         if (state is DigitalNoteLoaded) {
+                          // --- THIS IS THE NEW LOGIC TO GROUP NOTES ---
+                          final groupedNotes =
+                              groupBy<DigitalNoteModel, double>(
+                                state.notes,
+                                (note) => note.denomination,
+                              );
+
+                          // Sort the denominations from largest to smallest
+                          final sortedKeys = groupedNotes.keys.toList()
+                            ..sort((a, b) => b.compareTo(a));
+
                           return SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.symmetric(
@@ -122,9 +133,7 @@ class DigitalNoteScreen extends StatelessWidget {
                                     balance: state.totalBalance,
                                   ),
                                 ),
-
                                 const SizedBox(height: 24),
-
                                 // Action Buttons Card
                                 Container(
                                   width: double.infinity,
@@ -212,10 +221,8 @@ class DigitalNoteScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-
                                 const SizedBox(height: 24),
-
-                                // Notes List Card
+                                // Notes Grid Card
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(24),
@@ -267,20 +274,33 @@ class DigitalNoteScreen extends StatelessWidget {
                                           ),
                                         )
                                       else
-                                        ListView.builder(
+                                        GridView.builder(
                                           shrinkWrap: true,
                                           physics:
                                               const NeverScrollableScrollPhysics(),
-                                          itemCount: state.notes.length,
+                                          gridDelegate:
+                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: 2,
+                                                crossAxisSpacing: 16,
+                                                mainAxisSpacing: 16,
+                                                childAspectRatio:
+                                                    1.58, // Aspect ratio of a banknote
+                                              ),
+                                          itemCount: sortedKeys.length,
                                           itemBuilder: (context, index) {
-                                            final note = state.notes[index];
-                                            return NoteCard(note: note);
+                                            final denomination =
+                                                sortedKeys[index];
+                                            final notesInGroup =
+                                                groupedNotes[denomination]!;
+                                            return GroupedNoteCard(
+                                              denomination: denomination,
+                                              notes: notesInGroup,
+                                            );
                                           },
                                         ),
                                     ],
                                   ),
                                 ),
-
                                 const SizedBox(height: 32),
                               ],
                             ),
@@ -335,6 +355,159 @@ class DigitalNoteScreen extends StatelessWidget {
           child: const HistoryDialog(),
         );
       },
+    );
+  }
+}
+
+// --- NEW WIDGET FOR THE GROUPED NOTE STACK ---
+class GroupedNoteCard extends StatelessWidget {
+  final double denomination;
+  final List<DigitalNoteModel> notes;
+
+  const GroupedNoteCard({
+    super.key,
+    required this.denomination,
+    required this.notes,
+  });
+
+  // Helper to get image path based on denomination
+  String _getImageForDenomination(double den) {
+    switch (den.toInt()) {
+      case 1000:
+        return 'assets/images/1000tk.jpg';
+      case 500:
+        return 'assets/images/500tk.jpg';
+      case 200:
+        return 'assets/images/200tk.jpg';
+      case 100:
+        return 'assets/images/100tk.jpg';
+      case 50:
+        return 'assets/images/50tk.jpg';
+      case 20:
+        return 'assets/images/20tk.jpg';
+      case 10:
+        return 'assets/images/10tk.jpg';
+      case 5:
+        return 'assets/images/5tk.jpg';
+      case 2:
+        return 'assets/images/2tk.jpg';
+      case 1:
+        return 'assets/images/1tk.jpg';
+      default:
+        return ''; // Fallback image path
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imagePath = _getImageForDenomination(denomination);
+
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (_) => NoteDetailDialog(notes: notes),
+        );
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Banknote Image
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: imagePath.isNotEmpty
+                  ? Image.asset(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey.shade300,
+                          child: Center(
+                            child: Text('৳${denomination.toInt()}'),
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey.shade300,
+                      child: Center(child: Text('৳${denomination.toInt()}')),
+                    ),
+            ),
+          ),
+          // Note Count Badge
+          Positioned(
+            top: -8,
+            right: -8,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF667eea),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
+              ),
+              child: Text(
+                'x${notes.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- NEW WIDGET FOR THE NOTE DETAIL DIALOG ---
+class NoteDetailDialog extends StatelessWidget {
+  final List<DigitalNoteModel> notes;
+  const NoteDetailDialog({super.key, required this.notes});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Details for ৳${notes.first.denomination.toInt()} Notes'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: notes.length,
+          itemBuilder: (context, index) {
+            final note = notes[index];
+            return ListTile(
+              dense: true,
+              title: SelectableText(
+                'S/N: ${note.serialNumber}',
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+              subtitle: Text(
+                'From: ${note.receivedFromEmail}',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }
