@@ -34,7 +34,6 @@ migrate_working_dir/
 /build/
 
 #Api keys
-.env
 *.env
 
 # Symbolication related
@@ -52,3 +51,4 @@ app.*.map.json
 firebase_options.dart
 google-services.json
 firebase.json
+node_modules

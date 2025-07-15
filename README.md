@@ -63,7 +63,39 @@ When a user sends Digital Notes, the system uses an intelligent, atomic transact
   The transaction ledger links the old note to the new ones, ensuring the trail is never broken.
 
 ---
+## 📦 Key Packages Used
 
+- **`flutter_bloc`**:  
+  For implementing the **BLoC pattern** and managing application state.
+
+- **`go_router`**:  
+  For declarative, URL-based **navigation and routing**.
+
+- **`firebase_core`, `firebase_auth`, `cloud_firestore`**:  
+  For all **backend services**, including **authentication** and **database**.
+
+- **`google_sign_in`**:  
+  To handle the native **Google Sign-In** flow.
+
+- **`flutter_stripe`**:  
+  For secure and compliant **payment processing** for deposits.
+
+- **`equatable`**:  
+  To compare Dart objects, essential for **BLoC state management**.
+
+- **`rxdart`**:  
+  Used in the **repository layer** to combine multiple data streams.
+
+- **`lottie`**:  
+  For displaying high-quality **animations** on the splash screen.
+
+- **`intl`**:  
+  For formatting **numbers and dates** into currency and readable formats.
+
+- **`flutter_dotenv`**:  
+  For managing **secret API keys** securely.
+
+---
 ## 🚀 Installation and Setup Guide
 
 Follow these steps to set up and run the project locally.
@@ -92,12 +124,25 @@ Go to **Firestore Database > Indexes > Composite** and create the following two 
   - Collection ID: `digital_notes`  
   - Fields: `ownerUserId (Ascending)`, `status (Ascending)`, `denomination (Descending)`
 
-### 2. Configure the Project 📂
+### 2 🔐 Environment Configuration
+
+Create a `.env` file in the **root directory** of your project and add the following keys:
+
+```env
+COINGECKO_API_KEY=your api key
+STRIPE_PUBLISHABLE_KEY=your api key
+STRIPE_SECRET_KEY=your api key
+```
+
+### 3. Configure the Project 📂
 
 ```bash
 # Clone the Repository
-git clone [your-repository-url]
+git clone https://github.com/The-Black-Shadow/cryptox
 cd cryptox
 
 # Get Dependencies
 flutter pub get
+```
+
+
